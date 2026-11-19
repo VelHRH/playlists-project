@@ -2,7 +2,9 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { sql } from "drizzle-orm";
 import pg from "pg";
+import { rm } from "node:fs/promises";
 import { e2eDatabaseUrl } from "./e2e-database-url";
+import { e2eOutboxDir } from "./mail-outbox";
 
 async function ensureDatabaseExists(url: string) {
   const target = new URL(url);
@@ -19,6 +21,7 @@ async function ensureDatabaseExists(url: string) {
 }
 
 export default async function globalSetup() {
+  await rm(e2eOutboxDir, { recursive: true, force: true });
   await ensureDatabaseExists(e2eDatabaseUrl);
   const db = drizzle(e2eDatabaseUrl);
   await migrate(db, { migrationsFolder: "./drizzle" });
