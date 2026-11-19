@@ -6,6 +6,7 @@ const messages: Record<string, string> = {
   INVALID_EMAIL: "Некоректний email.",
   PASSWORD_TOO_SHORT: "Пароль має містити щонайменше 8 символів.",
   PASSWORD_TOO_LONG: "Пароль має містити не більше 128 символів.",
+  INVALID_TOKEN: "Посилання для скидання пароля недійсне або застаріло.",
 };
 
 export function authErrorMessage(error: { code?: string; status?: number }) {

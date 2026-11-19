@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { defineConfig, devices } from "@playwright/test";
 import { e2eDatabaseUrl } from "./e2e/e2e-database-url";
+import { e2eOutboxDir } from "./e2e/mail-outbox";
 
 const port = 3100;
 
@@ -31,6 +32,7 @@ export default defineConfig({
       BETTER_AUTH_URL: `http://localhost:${port}`,
       BETTER_AUTH_SECRET: randomBytes(32).toString("base64"),
       AUTH_RATE_LIMIT_DISABLED: "true",
+      MAIL_OUTBOX_DIR: e2eOutboxDir,
     },
   },
 });

@@ -31,6 +31,10 @@ Postgres слухає порт `54329` і містить три бази: `playl
 | `BETTER_AUTH_SECRET` | Секрет для підпису сесій; згенеруйте `openssl rand -base64 32` |
 | `TEST_DATABASE_URL` | Підключення до бази для Vitest (за замовчуванням `postgres://postgres:postgres@localhost:54329/playlists_test`) |
 | `E2E_DATABASE_URL` | Підключення до бази для Playwright (за замовчуванням `postgres://postgres:postgres@localhost:54329/playlists_e2e`); перед прогоном вона створюється за потреби, мігрується й очищується |
+| `RESEND_API_KEY` | API-ключ [Resend](https://resend.com) для відправки листів (скидання пароля). Обов'язковий у продакшні; без нього в режимі розробки листи виводяться в консоль сервера |
+| `MAIL_FROM` | Адреса відправника, наприклад `Плейлисти <noreply@your-domain.com>`; потрібна разом із `RESEND_API_KEY`. Домен має бути підтверджений у Resend (для розробки підходить `onboarding@resend.dev`) |
+| `MAIL_OUTBOX_DIR` | Каталог, куди листи записуються як JSON замість відправки; має пріоритет над Resend. Використовується лише в e2e |
+| `E2E_MAIL_OUTBOX_DIR` | Каталог збирача листів для Playwright (за замовчуванням `<tmp>/playlists-e2e-outbox`); очищується перед прогоном |
 | `AUTH_RATE_LIMIT_DISABLED` | `true` вимикає обмеження частоти входу; використовується лише в e2e. Без нього обмеження діє в продакшн-режимі |
 
 ## Скрипти

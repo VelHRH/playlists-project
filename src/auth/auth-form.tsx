@@ -1,5 +1,6 @@
 "use client";
 
+import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
@@ -8,9 +9,10 @@ type AuthFormProps = {
   submitLabel: string;
   onSubmit: (form: FormData) => Promise<string | null>;
   children: ReactNode;
+  successHref?: Route;
 };
 
-export function AuthForm({ submitLabel, onSubmit, children }: AuthFormProps) {
+export function AuthForm({ submitLabel, onSubmit, children, successHref = "/" }: AuthFormProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -25,7 +27,7 @@ export function AuthForm({ submitLabel, onSubmit, children }: AuthFormProps) {
       setPending(false);
       return;
     }
-    router.replace("/");
+    router.replace(successHref);
     router.refresh();
   }
 

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { authClient } from "@/auth/auth-client";
 import { authErrorMessage } from "@/auth/auth-error-message";
 import { AuthForm } from "@/auth/auth-form";
@@ -22,7 +23,12 @@ export function SignInForm() {
         <Input id="email" name="email" type="email" autoComplete="email" required />
       </div>
       <div className="flex flex-col gap-2">
-        <Label htmlFor="password">Пароль</Label>
+        <div className="flex items-center justify-between gap-2">
+          <Label htmlFor="password">Пароль</Label>
+          <Link href="/forgot-password" className="text-sm text-muted-foreground underline">
+            Забули пароль?
+          </Link>
+        </div>
         <Input id="password" name="password" type="password" autoComplete="current-password" required />
       </div>
     </AuthForm>
