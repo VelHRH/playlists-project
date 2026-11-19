@@ -58,12 +58,12 @@ export async function listMyPlaylists(userId: string) {
 const playlistIdSchema = z.uuid();
 
 export async function getPlaylistForOwner(userId: string | null, playlistId: string) {
-  const notFound = new PlaylistError("not-found", "Плейлист не знайдено.");
-  if (!userId || !playlistIdSchema.safeParse(playlistId).success) throw notFound;
+  const notFoundError = new PlaylistError("not-found", "Плейлист не знайдено.");
+  if (!userId || !playlistIdSchema.safeParse(playlistId).success) throw notFoundError;
   const [found] = await db
     .select()
     .from(playlist)
     .where(and(eq(playlist.id, playlistId), eq(playlist.ownerId, userId)));
-  if (!found) throw notFound;
+  if (!found) throw notFoundError;
   return found;
 }
