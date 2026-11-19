@@ -3,6 +3,8 @@ import { Suspense } from "react";
 import { getCurrentUser, type CurrentUser } from "@/auth/current-user";
 import { SignOutButton } from "@/auth/sign-out-button";
 import { buttonVariants } from "@/components/ui/button";
+import { listMyPlaylists } from "@/playlists/playlists";
+import { CreatePlaylistForm } from "./create-playlist-form";
 
 export default function Home() {
   return (
@@ -38,16 +40,35 @@ function Landing() {
   );
 }
 
-function MyPlaylists({ user }: { user: CurrentUser }) {
+async function MyPlaylists({ user }: { user: CurrentUser }) {
+  const playlists = await listMyPlaylists(user.id);
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-4 py-8 sm:px-6">
       <header className="flex items-center justify-between gap-4">
         <span className="truncate text-sm text-muted-foreground">{user.name}</span>
         <SignOutButton />
       </header>
-      <main className="flex flex-col gap-4">
+      <main className="flex flex-col gap-6">
         <h1 className="text-3xl font-semibold tracking-tight">Мої плейлисти</h1>
-        <p className="text-muted-foreground">Тут з&apos;являться ваші плейлисти.</p>
+        {playlists.length === 0 ? (
+          <p className="text-muted-foreground">
+            У вас ще немає плейлистів. Створіть перший — додайте назву й, за бажанням, опис.
+          </p>
+        ) : (
+          <ul aria-label="Мої плейлисти" className="flex flex-col divide-y rounded-xl border">
+            {playlists.map((playlist) => (
+              <li key={playlist.id}>
+                <Link
+                  href={`/playlists/${playlist.id}`}
+                  className="block truncate px-4 py-3 font-medium hover:bg-muted"
+                >
+                  {playlist.title}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+        <CreatePlaylistForm />
       </main>
     </div>
   );

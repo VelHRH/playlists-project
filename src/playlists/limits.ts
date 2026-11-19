@@ -1,0 +1,3 @@
+export const PLAYLIST_TITLE_MAX = 200;
+export const PLAYLIST_DESCRIPTION_MAX = 1000;
+export const PLAYLISTS_PER_USER_MAX = 1000;

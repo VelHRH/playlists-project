@@ -26,7 +26,7 @@ async function signIn(page: Page, { email, password }: { email: string; password
 async function expectSignedInAs(page: Page, name: string) {
   await expect(page).toHaveURL("/");
   await expect(page.getByRole("heading", { name: "Мої плейлисти" })).toBeVisible();
-  await expect(page.getByText(name)).toBeVisible();
+  await expect(page.getByText(name, { exact: true })).toBeVisible();
 }
 
 async function expectGuestLanding(page: Page) {

@@ -6,3 +6,4 @@ export const smokeCheck = pgTable("smoke_check", {
 });
 
 export * from "./auth-schema";
+export * from "./playlist-schema";
