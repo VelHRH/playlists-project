@@ -10,9 +10,10 @@ type AuthFormProps = {
   onSubmit: (form: FormData) => Promise<string | null>;
   children: ReactNode;
   successHref?: Route;
+  onSuccess?: () => void;
 };
 
-export function AuthForm({ submitLabel, onSubmit, children, successHref = "/" }: AuthFormProps) {
+export function AuthForm({ submitLabel, onSubmit, children, successHref = "/", onSuccess }: AuthFormProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -25,6 +26,10 @@ export function AuthForm({ submitLabel, onSubmit, children, successHref = "/" }:
     if (failure) {
       setError(failure);
       setPending(false);
+      return;
+    }
+    if (onSuccess) {
+      onSuccess();
       return;
     }
     router.replace(successHref);

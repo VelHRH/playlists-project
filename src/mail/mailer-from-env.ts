@@ -8,7 +8,8 @@ const consoleMailer: Mailer = {
   },
 };
 
-export function mailerFromEnv(env: NodeJS.ProcessEnv = process.env): Mailer {
+export function mailerFromEnv(): Mailer {
+  const env = process.env;
   if (env.MAIL_OUTBOX_DIR) return createOutboxMailer(env.MAIL_OUTBOX_DIR);
   if (env.RESEND_API_KEY) {
     if (!env.MAIL_FROM) throw new Error("MAIL_FROM is not set");

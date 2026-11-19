@@ -1,33 +1,22 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import { authClient } from "@/auth/auth-client";
 import { authErrorMessage } from "@/auth/auth-error-message";
-import { Button } from "@/components/ui/button";
+import { AuthForm } from "@/auth/auth-form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+async function requestReset(form: FormData) {
+  const { error } = await authClient.requestPasswordReset({
+    email: String(form.get("email") ?? ""),
+    redirectTo: "/reset-password",
+  });
+  return error ? authErrorMessage(error) : null;
+}
+
 export function ForgotPasswordForm() {
   const [sent, setSent] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setPending(true);
-    setError(null);
-    const form = new FormData(event.currentTarget);
-    const { error } = await authClient.requestPasswordReset({
-      email: String(form.get("email") ?? ""),
-      redirectTo: "/reset-password",
-    });
-    setPending(false);
-    if (error) {
-      setError(authErrorMessage(error));
-      return;
-    }
-    setSent(true);
-  }
 
   if (sent) {
     return (
@@ -38,7 +27,7 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <AuthForm submitLabel="Надіслати посилання" onSubmit={requestReset} onSuccess={() => setSent(true)}>
       <p className="text-sm text-muted-foreground">
         Вкажіть email, з яким ви реєструвалися, і ми надішлемо посилання для встановлення нового пароля.
       </p>
@@ -46,14 +35,6 @@ export function ForgotPasswordForm() {
         <Label htmlFor="email">Email</Label>
         <Input id="email" name="email" type="email" autoComplete="email" required />
       </div>
-      {error && (
-        <p role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
-      <Button type="submit" disabled={pending}>
-        Надіслати посилання
-      </Button>
-    </form>
+    </AuthForm>
   );
 }
