@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { and, asc, count, desc, eq, max } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db/client";
@@ -83,11 +84,12 @@ function playlistNotFound() {
 async function lockOwnedPlaylist(tx: Transaction, userId: string | null, playlistId: string) {
   if (!userId || !playlistIdSchema.safeParse(playlistId).success) throw playlistNotFound();
   const [found] = await tx
-    .select({ id: playlist.id })
+    .select({ shareToken: playlist.shareToken })
     .from(playlist)
     .where(and(eq(playlist.id, playlistId), eq(playlist.ownerId, userId)))
     .for("update");
   if (!found) throw playlistNotFound();
+  return found;
 }
 
 async function markPlaylistChanged(tx: Transaction, playlistId: string) {
@@ -197,5 +199,55 @@ export async function removeTrack(userId: string | null, trackId: string) {
     const playlistId = await lockOwnedTrack(tx, userId, trackId);
     await tx.delete(track).where(eq(track.id, trackId));
     await markPlaylistChanged(tx, playlistId);
+  });
+}
+
+function newShareToken() {
+  return randomBytes(32).toString("base64url");
+}
+
+async function setShareToken(userId: string | null, playlistId: string, { keepExisting }: { keepExisting: boolean }) {
+  return db.transaction(async (tx) => {
+    const { shareToken: existing } = await lockOwnedPlaylist(tx, userId, playlistId);
+    if (keepExisting && existing) return existing;
+    const shareToken = newShareToken();
+    await tx.update(playlist).set({ shareToken }).where(eq(playlist.id, playlistId));
+    return shareToken;
+  });
+}
+
+export async function enableSharing(userId: string | null, playlistId: string) {
+  return setShareToken(userId, playlistId, { keepExisting: true });
+}
+
+export async function regenerateShareToken(userId: string | null, playlistId: string) {
+  return setShareToken(userId, playlistId, { keepExisting: false });
+}
+
+export async function getSharedPlaylist(token: string) {
+  const [found] = await db
+    .select({
+      id: playlist.id,
+      ownerId: playlist.ownerId,
+      title: playlist.title,
+      description: playlist.description,
+      authorName: user.name,
+    })
+    .from(playlist)
+    .innerJoin(user, eq(user.id, playlist.ownerId))
+    .where(eq(playlist.shareToken, token));
+  if (!found) throw playlistNotFound();
+  const tracks = await db
+    .select({ id: track.id, artist: track.artist, title: track.title, url: track.url, note: track.note })
+    .from(track)
+    .where(eq(track.playlistId, found.id))
+    .orderBy(asc(track.position));
+  return { ...found, tracks };
+}
+
+export async function disableSharing(userId: string | null, playlistId: string) {
+  await db.transaction(async (tx) => {
+    await lockOwnedPlaylist(tx, userId, playlistId);
+    await tx.update(playlist).set({ shareToken: null }).where(eq(playlist.id, playlistId));
   });
 }

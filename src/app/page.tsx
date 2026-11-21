@@ -70,7 +70,7 @@ async function MyPlaylists({ user }: { user: CurrentUser }) {
                 >
                   <span className="truncate font-medium">{playlist.title}</span>
                   <span className="shrink-0 text-sm text-muted-foreground">
-                    {formatTrackCount(playlist.trackCount)}
+                    {formatTrackCount(playlist.trackCount)} · {playlist.shareToken ? "за посиланням" : "приватний"}
                   </span>
                 </Link>
               </li>
