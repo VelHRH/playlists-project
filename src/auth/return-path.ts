@@ -1,7 +1,4 @@
-"use client";
-
 import type { Route } from "next";
-import { useSearchParams } from "next/navigation";
 
 const base = "http://localhost";
 
@@ -12,10 +9,10 @@ export function safeReturnPath(next: string | null): Route {
   return `${url.pathname}${url.search}` as Route;
 }
 
-export function useReturnPath() {
-  return safeReturnPath(useSearchParams().get("next"));
+export function withReturnPath(href: string, returnPath: string) {
+  return returnPath === "/" ? href : `${href}?next=${encodeURIComponent(returnPath)}`;
 }
 
-export function withReturnPath(href: string, returnPath: Route) {
-  return returnPath === "/" ? href : `${href}?next=${encodeURIComponent(returnPath)}`;
+export function signInReturningTo(returnPath: string) {
+  return withReturnPath("/sign-in", returnPath);
 }

@@ -3,6 +3,7 @@
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/auth/current-user";
+import { signInReturningTo } from "@/auth/return-path";
 import {
   addTrack,
   copySharedPlaylist,
@@ -107,7 +108,7 @@ export type CopySharedPlaylistState = { error: string | null };
 
 export async function copySharedPlaylistAction(token: string): Promise<CopySharedPlaylistState> {
   const user = await getCurrentUser();
-  if (!user) redirect(`/sign-in?next=${encodeURIComponent(`/s/${token}`)}`);
+  if (!user) redirect(signInReturningTo(`/s/${token}`));
 
   let id: string;
   try {

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { authClient } from "@/auth/auth-client";
 import { authErrorMessage } from "@/auth/auth-error-message";
 import { AuthForm } from "@/auth/auth-form";
-import { useReturnPath } from "@/auth/return-path";
+import { useReturnPath } from "@/auth/use-return-path";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 

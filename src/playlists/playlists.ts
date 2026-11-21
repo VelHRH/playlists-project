@@ -260,7 +260,8 @@ export async function copySharedPlaylist(userId: string, token: string) {
     const [original] = await tx
       .select({ id: playlist.id, title: playlist.title, description: playlist.description })
       .from(playlist)
-      .where(eq(playlist.shareToken, token));
+      .where(eq(playlist.shareToken, token))
+      .for("share");
     if (!original) throw playlistNotFound();
     await ensureRoomForPlaylist(tx, userId);
     const [copy] = await tx

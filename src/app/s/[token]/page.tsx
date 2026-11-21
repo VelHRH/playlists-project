@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { getCurrentUser } from "@/auth/current-user";
+import { signInReturningTo } from "@/auth/return-path";
 import { TrackLine } from "@/app/playlists/track-line";
 import { buttonVariants } from "@/components/ui/button";
 import { formatTrackCount } from "@/lib/track-count";
@@ -42,7 +43,7 @@ async function SharedPlaylist({ params }: Pick<PageProps<"/s/[token]">, "params"
         <SaveCopy token={token} />
       ) : (
         <Link
-          href={`/sign-in?next=${encodeURIComponent(`/s/${token}`)}`}
+          href={signInReturningTo(`/s/${token}`)}
           className={buttonVariants({ className: "self-start" })}
         >
           Зберегти копію

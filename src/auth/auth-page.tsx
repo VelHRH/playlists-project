@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
-import { useReturnPath, withReturnPath } from "./return-path";
+import { withReturnPath } from "./return-path";
+import { useReturnPath } from "./use-return-path";
 
 type AuthPageProps = {
   title: string;
