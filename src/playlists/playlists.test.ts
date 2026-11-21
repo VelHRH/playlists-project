@@ -1,14 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { db } from "@/db/client";
-import { user } from "@/db/schema";
+import { createUser } from "@/test/create-user";
 import { resetDatabase } from "@/test/reset-database";
 import { createPlaylist, getPlaylistForOwner, listMyPlaylists, PlaylistError } from "./playlists";
-
-async function createUser(name: string) {
-  const id = crypto.randomUUID();
-  await db.insert(user).values({ id, name, email: `${id}@example.com` });
-  return id;
-}
 
 describe("playlists", () => {
   beforeEach(resetDatabase);

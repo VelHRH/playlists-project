@@ -1,0 +1,61 @@
+import { expect, test, type Page } from "@playwright/test";
+
+async function signUpWithPlaylist(page: Page) {
+  await page.goto("/sign-up");
+  await page.getByLabel("Ім'я").fill("Олена");
+  await page.getByLabel("Email").fill(`user-${crypto.randomUUID()}@example.com`);
+  await page.getByLabel("Пароль").fill("correct-horse-battery");
+  await page.getByRole("button", { name: "Зареєструватися" }).click();
+  await page.getByLabel("Назва").fill("Літо");
+  await page.getByRole("button", { name: "Створити плейлист" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Літо" })).toBeVisible();
+}
+
+async function addTrack(page: Page, track: { artist: string; title: string; url?: string; note?: string }) {
+  const form = page.getByRole("form", { name: "Новий трек" });
+  await form.getByLabel("Виконавець").fill(track.artist);
+  await form.getByLabel("Назва").fill(track.title);
+  await form.getByLabel("Посилання (необов'язково)").fill(track.url ?? "");
+  await form.getByLabel("Нотатка (необов'язково)").fill(track.note ?? "");
+  await form.getByRole("button", { name: "Додати трек" }).click();
+}
+
+test("owner adds, edits and removes tracks and sees the count in the list", async ({ page }) => {
+  await signUpWithPlaylist(page);
+  const tracks = page.getByRole("list", { name: "Треки" });
+
+  await addTrack(page, { artist: "ДахаБраха", title: "Vesna", url: "javascript:alert(1)" });
+  await expect(page.getByRole("form", { name: "Новий трек" }).getByRole("alert")).toContainText(
+    "Посилання має починатися з http:// або https://",
+  );
+  await expect(page.getByRole("form", { name: "Новий трек" }).getByLabel("Виконавець")).toHaveValue("ДахаБраха");
+
+  await addTrack(page, { artist: "ДахаБраха", title: "Vesna", url: "https://example.com/vesna", note: "Для ранку" });
+  await expect(tracks.getByRole("listitem")).toHaveCount(1);
+  await expect(page.getByRole("form", { name: "Новий трек" }).getByLabel("Виконавець")).toHaveValue("");
+  await addTrack(page, { artist: "Океан Ельзи", title: "Обіми" });
+  await expect(tracks.getByRole("listitem")).toHaveCount(2);
+  await addTrack(page, { artist: "Океан Ельзи", title: "Обіми" });
+  await expect(tracks.getByRole("listitem")).toHaveCount(3);
+  const first = tracks.getByRole("listitem").nth(0);
+  await expect(first).toContainText("ДахаБраха — Vesna");
+  await expect(first).toContainText("Для ранку");
+  const link = first.getByRole("link", { name: "Vesna" });
+  await expect(link).toHaveAttribute("href", "https://example.com/vesna");
+  await expect(link).toHaveAttribute("target", "_blank");
+  await expect(link).toHaveAttribute("rel", "noopener noreferrer");
+
+  const second = tracks.getByRole("listitem").nth(1);
+  await second.getByRole("button", { name: "Редагувати" }).click();
+  await second.getByLabel("Назва").fill("Обійми");
+  await second.getByRole("button", { name: "Зберегти" }).click();
+  await expect(second).toContainText("Океан Ельзи — Обійми");
+  await expect(second.getByRole("button", { name: "Зберегти" })).toHaveCount(0);
+
+  await tracks.getByRole("listitem").nth(2).getByRole("button", { name: "Видалити" }).click();
+  await expect(tracks.getByRole("listitem")).toHaveCount(2);
+  await expect(tracks).toContainText("Океан Ельзи — Обійми");
+
+  await page.getByRole("link", { name: "← Мої плейлисти" }).click();
+  await expect(page.getByRole("list", { name: "Мої плейлисти" }).getByRole("listitem")).toContainText("2 треки");
+});
