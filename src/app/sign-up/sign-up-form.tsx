@@ -3,12 +3,13 @@
 import { authClient } from "@/auth/auth-client";
 import { authErrorMessage } from "@/auth/auth-error-message";
 import { AuthForm } from "@/auth/auth-form";
+import { DISPLAY_NAME_MAX, normalizeDisplayName } from "@/auth/display-name";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 async function signUp(form: FormData) {
-  const name = String(form.get("name") ?? "").trim();
-  if (!name) return "Вкажіть ім'я.";
+  const name = normalizeDisplayName(String(form.get("name") ?? ""));
+  if (name === null) return authErrorMessage({ code: "INVALID_NAME" });
   const { error } = await authClient.signUp.email({
     name,
     email: String(form.get("email") ?? ""),
@@ -22,7 +23,7 @@ export function SignUpForm() {
     <AuthForm submitLabel="Зареєструватися" onSubmit={signUp}>
       <div className="flex flex-col gap-2">
         <Label htmlFor="name">Ім&apos;я</Label>
-        <Input id="name" name="name" autoComplete="nickname" maxLength={100} required />
+        <Input id="name" name="name" autoComplete="nickname" maxLength={DISPLAY_NAME_MAX} required />
         <p className="text-xs text-muted-foreground">Його бачитимуть ті, з ким ви ділитеся плейлистами.</p>
       </div>
       <div className="flex flex-col gap-2">
