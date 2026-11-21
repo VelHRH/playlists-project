@@ -10,26 +10,43 @@ type AuthFormProps = {
   onSubmit: (form: FormData) => Promise<string | null>;
   children: ReactNode;
   successHref?: Route;
-  onSuccess?: () => void;
+  onSuccess?: (form: HTMLFormElement) => void;
+  successMessage?: string;
+  label?: string;
+  submitVariant?: "default" | "destructive";
 };
 
-export function AuthForm({ submitLabel, onSubmit, children, successHref = "/", onSuccess }: AuthFormProps) {
+export function AuthForm({
+  submitLabel,
+  onSubmit,
+  children,
+  successHref = "/",
+  onSuccess,
+  successMessage,
+  label,
+  submitVariant = "default",
+}: AuthFormProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [succeeded, setSucceeded] = useState(false);
   const [pending, setPending] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const form = event.currentTarget;
     setPending(true);
     setError(null);
-    const failure = await onSubmit(new FormData(event.currentTarget));
+    setSucceeded(false);
+    const failure = await onSubmit(new FormData(form));
     if (failure) {
       setError(failure);
       setPending(false);
       return;
     }
     if (onSuccess) {
-      onSuccess();
+      setPending(false);
+      setSucceeded(true);
+      onSuccess(form);
       return;
     }
     router.replace(successHref);
@@ -37,14 +54,19 @@ export function AuthForm({ submitLabel, onSubmit, children, successHref = "/", o
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <form onSubmit={handleSubmit} aria-label={label} className="flex flex-col gap-4">
       {children}
       {error && (
         <p role="alert" className="text-sm text-destructive">
           {error}
         </p>
       )}
-      <Button type="submit" disabled={pending}>
+      {succeeded && successMessage && (
+        <p role="status" className="text-sm">
+          {successMessage}
+        </p>
+      )}
+      <Button type="submit" variant={submitVariant} disabled={pending}>
         {submitLabel}
       </Button>
     </form>

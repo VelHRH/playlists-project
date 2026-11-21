@@ -46,7 +46,12 @@ async function MyPlaylists({ user }: { user: CurrentUser }) {
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-4 py-8 sm:px-6">
       <header className="flex items-center justify-between gap-4">
         <span className="truncate text-sm text-muted-foreground">{user.name}</span>
-        <SignOutButton />
+        <div className="flex shrink-0 items-center gap-2">
+          <Link href="/settings" className={buttonVariants({ variant: "ghost" })}>
+            Налаштування
+          </Link>
+          <SignOutButton />
+        </div>
       </header>
       <main className="flex flex-col gap-6">
         <h1 className="text-3xl font-semibold tracking-tight">Мої плейлисти</h1>

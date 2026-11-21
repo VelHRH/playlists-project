@@ -7,11 +7,18 @@ const messages: Record<string, string> = {
   PASSWORD_TOO_SHORT: "Пароль має містити щонайменше 8 символів.",
   PASSWORD_TOO_LONG: "Пароль має містити не більше 128 символів.",
   INVALID_TOKEN: "Посилання для скидання пароля недійсне або застаріло.",
+  INVALID_NAME: "Вкажіть ім'я.",
 };
 
-export function authErrorMessage(error: { code?: string; status?: number }) {
+export function authErrorMessage(
+  error: { code?: string; status?: number },
+  overrides: Record<string, string> = {},
+) {
   if (error.status === 429) {
     return "Забагато спроб. Зачекайте трохи й спробуйте знову.";
   }
-  return (error.code && messages[error.code]) ?? "Щось пішло не так. Спробуйте ще раз.";
+  return (
+    (error.code && (overrides[error.code] ?? messages[error.code])) ??
+    "Щось пішло не так. Спробуйте ще раз."
+  );
 }
