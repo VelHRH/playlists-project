@@ -4,6 +4,7 @@ import Link from "next/link";
 import { authClient } from "@/auth/auth-client";
 import { authErrorMessage } from "@/auth/auth-error-message";
 import { AuthForm } from "@/auth/auth-form";
+import { useReturnPath } from "@/auth/use-return-path";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -17,7 +18,7 @@ async function signIn(form: FormData) {
 
 export function SignInForm() {
   return (
-    <AuthForm submitLabel="Увійти" onSubmit={signIn}>
+    <AuthForm submitLabel="Увійти" successHref={useReturnPath()} onSubmit={signIn}>
       <div className="flex flex-col gap-2">
         <Label htmlFor="email">Email</Label>
         <Input id="email" name="email" type="email" autoComplete="email" required />

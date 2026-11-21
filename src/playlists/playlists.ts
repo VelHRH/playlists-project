@@ -35,20 +35,26 @@ function parsePlaylistInput(input: PlaylistInput) {
   return result.data;
 }
 
+type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+async function ensureRoomForPlaylist(tx: Transaction, userId: string) {
+  await tx.select({ id: user.id }).from(user).where(eq(user.id, userId)).for("update");
+  const [{ owned }] = await tx
+    .select({ owned: count() })
+    .from(playlist)
+    .where(eq(playlist.ownerId, userId));
+  if (owned >= PLAYLISTS_PER_USER_MAX) {
+    throw new PlaylistError(
+      "limit-exceeded",
+      `Можна мати не більше ${PLAYLISTS_PER_USER_MAX} плейлистів. Видаліть непотрібні, щоб створити новий.`,
+    );
+  }
+}
+
 export async function createPlaylist(userId: string, input: PlaylistInput) {
   const values = parsePlaylistInput(input);
   return db.transaction(async (tx) => {
-    await tx.select({ id: user.id }).from(user).where(eq(user.id, userId)).for("update");
-    const [{ owned }] = await tx
-      .select({ owned: count() })
-      .from(playlist)
-      .where(eq(playlist.ownerId, userId));
-    if (owned >= PLAYLISTS_PER_USER_MAX) {
-      throw new PlaylistError(
-        "limit-exceeded",
-        `Можна мати не більше ${PLAYLISTS_PER_USER_MAX} плейлистів. Видаліть непотрібні, щоб створити новий.`,
-      );
-    }
+    await ensureRoomForPlaylist(tx, userId);
     const [created] = await tx
       .insert(playlist)
       .values({ ownerId: userId, ...values })
@@ -74,8 +80,6 @@ export async function listMyPlaylists(userId: string) {
 }
 
 const playlistIdSchema = z.uuid();
-
-type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 function playlistNotFound() {
   return new PlaylistError("not-found", "Плейлист не знайдено.");
@@ -243,6 +247,36 @@ export async function getSharedPlaylist(token: string) {
     .where(eq(track.playlistId, found.id))
     .orderBy(asc(track.position));
   return { ...found, tracks };
+}
+
+const COPY_SUFFIX = " (копія)";
+
+function copyTitle(title: string) {
+  return title.slice(0, PLAYLIST_TITLE_MAX - COPY_SUFFIX.length).trimEnd() + COPY_SUFFIX;
+}
+
+export async function copySharedPlaylist(userId: string, token: string) {
+  return db.transaction(async (tx) => {
+    const [original] = await tx
+      .select({ id: playlist.id, title: playlist.title, description: playlist.description })
+      .from(playlist)
+      .where(eq(playlist.shareToken, token))
+      .for("share");
+    if (!original) throw playlistNotFound();
+    await ensureRoomForPlaylist(tx, userId);
+    const [copy] = await tx
+      .insert(playlist)
+      .values({ ownerId: userId, title: copyTitle(original.title), description: original.description })
+      .returning();
+    const tracks = await tx
+      .select({ position: track.position, artist: track.artist, title: track.title, url: track.url, note: track.note })
+      .from(track)
+      .where(eq(track.playlistId, original.id));
+    if (tracks.length > 0) {
+      await tx.insert(track).values(tracks.map((t) => ({ ...t, playlistId: copy.id })));
+    }
+    return copy;
+  });
 }
 
 export async function disableSharing(userId: string | null, playlistId: string) {

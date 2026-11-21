@@ -3,10 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { getCurrentUser } from "@/auth/current-user";
+import { signInReturningTo } from "@/auth/return-path";
 import { TrackLine } from "@/app/playlists/track-line";
 import { buttonVariants } from "@/components/ui/button";
 import { formatTrackCount } from "@/lib/track-count";
 import { getSharedPlaylist, PlaylistError } from "@/playlists/playlists";
+import { SaveCopy } from "./save-copy";
 
 export const metadata: Metadata = { title: "Плейлист · Плейлисти", robots: { index: false } };
 
@@ -30,12 +32,21 @@ async function SharedPlaylist({ params }: Pick<PageProps<"/s/[token]">, "params"
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 px-4 py-8 sm:px-6">
-      {user?.id === playlist.ownerId && (
+      {user?.id === playlist.ownerId ? (
         <Link
           href={`/playlists/${playlist.id}`}
           className={buttonVariants({ variant: "outline", className: "self-start" })}
         >
           Редагувати плейлист
+        </Link>
+      ) : user ? (
+        <SaveCopy token={token} />
+      ) : (
+        <Link
+          href={signInReturningTo(`/s/${token}`)}
+          className={buttonVariants({ className: "self-start" })}
+        >
+          Зберегти копію
         </Link>
       )}
       <div className="flex flex-col gap-1">

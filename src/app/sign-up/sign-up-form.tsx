@@ -3,6 +3,7 @@
 import { authClient } from "@/auth/auth-client";
 import { authErrorMessage } from "@/auth/auth-error-message";
 import { AuthForm } from "@/auth/auth-form";
+import { useReturnPath } from "@/auth/use-return-path";
 import { DISPLAY_NAME_MAX, normalizeDisplayName } from "@/auth/display-name";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,7 +21,7 @@ async function signUp(form: FormData) {
 
 export function SignUpForm() {
   return (
-    <AuthForm submitLabel="Зареєструватися" onSubmit={signUp}>
+    <AuthForm submitLabel="Зареєструватися" successHref={useReturnPath()} onSubmit={signUp}>
       <div className="flex flex-col gap-2">
         <Label htmlFor="name">Ім&apos;я</Label>
         <Input id="name" name="name" autoComplete="nickname" maxLength={DISPLAY_NAME_MAX} required />

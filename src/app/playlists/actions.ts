@@ -3,8 +3,10 @@
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/auth/current-user";
+import { signInReturningTo } from "@/auth/return-path";
 import {
   addTrack,
+  copySharedPlaylist,
   createPlaylist,
   disableSharing,
   enableSharing,
@@ -100,4 +102,20 @@ export async function disableSharingAction(playlistId: string) {
 
 export async function regenerateShareTokenAction(playlistId: string) {
   await mutateIgnoringNotFound((userId) => regenerateShareToken(userId, playlistId));
+}
+
+export type CopySharedPlaylistState = { error: string | null };
+
+export async function copySharedPlaylistAction(token: string): Promise<CopySharedPlaylistState> {
+  const user = await getCurrentUser();
+  if (!user) redirect(signInReturningTo(`/s/${token}`));
+
+  let id: string;
+  try {
+    ({ id } = await copySharedPlaylist(user.id, token));
+  } catch (error) {
+    if (error instanceof PlaylistError) return { error: error.message };
+    throw error;
+  }
+  redirect(`/playlists/${id}`);
 }
