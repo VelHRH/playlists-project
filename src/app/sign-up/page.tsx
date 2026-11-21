@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { AuthPage } from "@/auth/auth-page";
 import { SignUpForm } from "./sign-up-form";
 
@@ -10,7 +11,9 @@ export default function SignUpPage() {
       title="Реєстрація"
       footer={{ text: "Уже маєте акаунт?", linkLabel: "Увійти", href: "/sign-in" }}
     >
-      <SignUpForm />
+      <Suspense fallback={null}>
+        <SignUpForm />
+      </Suspense>
     </AuthPage>
   );
 }

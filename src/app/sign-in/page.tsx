@@ -14,7 +14,9 @@ export default function SignInPage({ searchParams }: PageProps<"/sign-in">) {
       <Suspense fallback={null}>
         <PasswordResetNotice searchParams={searchParams} />
       </Suspense>
-      <SignInForm />
+      <Suspense fallback={null}>
+        <SignInForm />
+      </Suspense>
     </AuthPage>
   );
 }
