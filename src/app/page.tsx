@@ -4,7 +4,7 @@ import { getCurrentUser, type CurrentUser } from "@/auth/current-user";
 import { SignOutButton } from "@/auth/sign-out-button";
 import { buttonVariants } from "@/components/ui/button";
 import { listMyPlaylists } from "@/playlists/playlists";
-import { formatTrackCount } from "@/playlists/track-count";
+import { formatTrackCount } from "@/lib/track-count";
 import { CreatePlaylistForm } from "./create-playlist-form";
 
 export default function Home() {

@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import { getCurrentUser } from "@/auth/current-user";
 import { addTrackAction } from "@/app/playlists/actions";
 import { getPlaylistForOwner, PlaylistError } from "@/playlists/playlists";
-import { formatTrackCount } from "@/playlists/track-count";
+import { formatTrackCount } from "@/lib/track-count";
 import { TrackForm } from "./track-form";
 import { TrackItem } from "./track-item";
 
