@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 
 async function signUp(form: FormData) {
   const name = normalizeDisplayName(String(form.get("name") ?? ""));
-  if (name === null) return "Вкажіть ім'я.";
+  if (name === null) return authErrorMessage({ code: "INVALID_NAME" });
   const { error } = await authClient.signUp.email({
     name,
     email: String(form.get("email") ?? ""),

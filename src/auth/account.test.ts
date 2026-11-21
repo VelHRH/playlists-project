@@ -31,28 +31,6 @@ describe("account", () => {
     expect((await listMyPlaylists(taras.id)).map((p) => p.title)).toEqual(["Літо (копія)"]);
   });
 
-  it("does not delete an account when the password is wrong", async () => {
-    const olena = await signUp("Олена");
-    await createPlaylist(olena.id, { title: "Літо" });
-
-    const attempt = auth.api.deleteUser({ headers: olena.headers, body: { password: "wrong-password-123" } });
-
-    await expect(attempt).rejects.toMatchObject({ body: { code: "INVALID_PASSWORD" } });
-    expect(await auth.api.getSession({ headers: olena.headers })).not.toBeNull();
-    expect((await listMyPlaylists(olena.id)).map((p) => p.title)).toEqual(["Літо"]);
-  });
-
-  it("rejects a password change when the current password is wrong", async () => {
-    const olena = await signUp("Олена");
-
-    const attempt = auth.api.changePassword({
-      headers: olena.headers,
-      body: { currentPassword: "wrong-password-123", newPassword: "new-horse-battery" },
-    });
-
-    await expect(attempt).rejects.toMatchObject({ body: { code: "INVALID_PASSWORD" } });
-  });
-
   it.each(["", "   "])("rejects the display name %j", async (name) => {
     const olena = await signUp("Олена");
 

@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 
 async function saveName(form: FormData) {
   const name = normalizeDisplayName(String(form.get("name") ?? ""));
-  if (name === null) return "Вкажіть ім'я.";
+  if (name === null) return authErrorMessage({ code: "INVALID_NAME" });
   const { error } = await authClient.updateUser({ name });
   return error ? authErrorMessage(error) : null;
 }
