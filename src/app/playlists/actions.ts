@@ -6,7 +6,10 @@ import { getCurrentUser } from "@/auth/current-user";
 import {
   addTrack,
   createPlaylist,
+  disableSharing,
+  enableSharing,
   PlaylistError,
+  regenerateShareToken,
   removeTrack,
   updateTrack,
   type TrackInput,
@@ -81,4 +84,26 @@ export async function removeTrackAction(trackId: string) {
     if (!(error instanceof PlaylistError && error.code === "not-found")) throw error;
   }
   refresh();
+}
+
+async function changeSharing(change: (userId: string | null) => Promise<unknown>) {
+  const user = await getCurrentUser();
+  try {
+    await change(user?.id ?? null);
+  } catch (error) {
+    if (!(error instanceof PlaylistError && error.code === "not-found")) throw error;
+  }
+  refresh();
+}
+
+export async function enableSharingAction(playlistId: string) {
+  await changeSharing((userId) => enableSharing(userId, playlistId));
+}
+
+export async function disableSharingAction(playlistId: string) {
+  await changeSharing((userId) => disableSharing(userId, playlistId));
+}
+
+export async function regenerateShareTokenAction(playlistId: string) {
+  await changeSharing((userId) => regenerateShareToken(userId, playlistId));
 }

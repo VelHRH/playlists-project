@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/auth/current-user";
 import { addTrackAction } from "@/app/playlists/actions";
 import { getPlaylistForOwner, PlaylistError } from "@/playlists/playlists";
 import { formatTrackCount } from "@/lib/track-count";
+import { SharePanel } from "./share-panel";
 import { TrackForm } from "./track-form";
 import { TrackItem } from "./track-item";
 
@@ -52,6 +53,7 @@ async function OwnedPlaylist({ params }: Pick<PageProps<"/playlists/[id]">, "par
         <h2 className="text-lg font-medium">Новий трек</h2>
         <TrackForm label="Новий трек" submitLabel="Додати трек" action={addTrackAction.bind(null, playlist.id)} />
       </section>
+      <SharePanel playlistId={playlist.id} shareToken={playlist.shareToken} />
     </main>
   );
 }
