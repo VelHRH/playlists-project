@@ -4,6 +4,7 @@ import { getCurrentUser, type CurrentUser } from "@/auth/current-user";
 import { SignOutButton } from "@/auth/sign-out-button";
 import { buttonVariants } from "@/components/ui/button";
 import { listMyPlaylists } from "@/playlists/playlists";
+import { formatTrackCount } from "@/playlists/track-count";
 import { CreatePlaylistForm } from "./create-playlist-form";
 
 export default function Home() {
@@ -65,9 +66,12 @@ async function MyPlaylists({ user }: { user: CurrentUser }) {
               <li key={playlist.id}>
                 <Link
                   href={`/playlists/${playlist.id}`}
-                  className="block truncate px-4 py-3 font-medium hover:bg-muted"
+                  className="flex items-baseline justify-between gap-4 px-4 py-3 hover:bg-muted"
                 >
-                  {playlist.title}
+                  <span className="truncate font-medium">{playlist.title}</span>
+                  <span className="shrink-0 text-sm text-muted-foreground">
+                    {formatTrackCount(playlist.trackCount)}
+                  </span>
                 </Link>
               </li>
             ))}

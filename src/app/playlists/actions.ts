@@ -1,8 +1,16 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/auth/current-user";
-import { createPlaylist, PlaylistError } from "@/playlists/playlists";
+import {
+  addTrack,
+  createPlaylist,
+  PlaylistError,
+  removeTrack,
+  updateTrack,
+  type TrackInput,
+} from "@/playlists/playlists";
 
 export type CreatePlaylistState = { error: string | null };
 
@@ -24,4 +32,53 @@ export async function createPlaylistAction(
     throw error;
   }
   redirect(`/playlists/${id}`);
+}
+
+export type TrackFormState = { error: string | null; saved: number };
+
+function trackInput(form: FormData): TrackInput {
+  return {
+    artist: String(form.get("artist") ?? ""),
+    title: String(form.get("title") ?? ""),
+    url: String(form.get("url") ?? ""),
+    note: String(form.get("note") ?? ""),
+  };
+}
+
+async function saveTrack(previous: TrackFormState, save: (userId: string | null) => Promise<unknown>) {
+  const user = await getCurrentUser();
+  try {
+    await save(user?.id ?? null);
+  } catch (error) {
+    if (error instanceof PlaylistError) return { error: error.message, saved: previous.saved };
+    throw error;
+  }
+  refresh();
+  return { error: null, saved: previous.saved + 1 };
+}
+
+export async function addTrackAction(
+  playlistId: string,
+  previous: TrackFormState,
+  form: FormData,
+): Promise<TrackFormState> {
+  return saveTrack(previous, (userId) => addTrack(userId, playlistId, trackInput(form)));
+}
+
+export async function updateTrackAction(
+  trackId: string,
+  previous: TrackFormState,
+  form: FormData,
+): Promise<TrackFormState> {
+  return saveTrack(previous, (userId) => updateTrack(userId, trackId, trackInput(form)));
+}
+
+export async function removeTrackAction(trackId: string) {
+  const user = await getCurrentUser();
+  try {
+    await removeTrack(user?.id ?? null, trackId);
+  } catch (error) {
+    if (!(error instanceof PlaylistError && error.code === "not-found")) throw error;
+  }
+  refresh();
 }

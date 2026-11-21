@@ -1,3 +1,8 @@
 export const PLAYLIST_TITLE_MAX = 200;
 export const PLAYLIST_DESCRIPTION_MAX = 1000;
 export const PLAYLISTS_PER_USER_MAX = 1000;
+export const TRACK_ARTIST_MAX = 200;
+export const TRACK_TITLE_MAX = 200;
+export const TRACK_NOTE_MAX = 500;
+export const TRACK_URL_MAX = 2048;
+export const TRACKS_PER_PLAYLIST_MAX = 500;

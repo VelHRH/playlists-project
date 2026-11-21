@@ -1,8 +1,17 @@
-import { and, count, desc, eq } from "drizzle-orm";
+import { and, asc, count, desc, eq, max } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db/client";
-import { playlist, user } from "@/db/schema";
-import { PLAYLIST_DESCRIPTION_MAX, PLAYLIST_TITLE_MAX, PLAYLISTS_PER_USER_MAX } from "./limits";
+import { playlist, track, user } from "@/db/schema";
+import {
+  PLAYLIST_DESCRIPTION_MAX,
+  PLAYLIST_TITLE_MAX,
+  PLAYLISTS_PER_USER_MAX,
+  TRACK_ARTIST_MAX,
+  TRACK_NOTE_MAX,
+  TRACK_TITLE_MAX,
+  TRACK_URL_MAX,
+  TRACKS_PER_PLAYLIST_MAX,
+} from "./limits";
 import { PlaylistError } from "./playlist-error";
 
 export { PlaylistError, type PlaylistErrorCode } from "./playlist-error";
@@ -49,7 +58,15 @@ export async function createPlaylist(userId: string, input: PlaylistInput) {
 
 export async function listMyPlaylists(userId: string) {
   return db
-    .select()
+    .select({
+      id: playlist.id,
+      title: playlist.title,
+      description: playlist.description,
+      shareToken: playlist.shareToken,
+      createdAt: playlist.createdAt,
+      updatedAt: playlist.updatedAt,
+      trackCount: db.$count(track, eq(track.playlistId, playlist.id)),
+    })
     .from(playlist)
     .where(eq(playlist.ownerId, userId))
     .orderBy(desc(playlist.updatedAt), desc(playlist.createdAt));
@@ -57,13 +74,128 @@ export async function listMyPlaylists(userId: string) {
 
 const playlistIdSchema = z.uuid();
 
+type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+function playlistNotFound() {
+  return new PlaylistError("not-found", "Плейлист не знайдено.");
+}
+
+async function lockOwnedPlaylist(tx: Transaction, userId: string | null, playlistId: string) {
+  if (!userId || !playlistIdSchema.safeParse(playlistId).success) throw playlistNotFound();
+  const [found] = await tx
+    .select({ id: playlist.id })
+    .from(playlist)
+    .where(and(eq(playlist.id, playlistId), eq(playlist.ownerId, userId)))
+    .for("update");
+  if (!found) throw playlistNotFound();
+}
+
+async function markPlaylistChanged(tx: Transaction, playlistId: string) {
+  await tx.update(playlist).set({ updatedAt: new Date() }).where(eq(playlist.id, playlistId));
+}
+
 export async function getPlaylistForOwner(userId: string | null, playlistId: string) {
-  const notFoundError = new PlaylistError("not-found", "Плейлист не знайдено.");
-  if (!userId || !playlistIdSchema.safeParse(playlistId).success) throw notFoundError;
+  if (!userId || !playlistIdSchema.safeParse(playlistId).success) throw playlistNotFound();
   const [found] = await db
     .select()
     .from(playlist)
     .where(and(eq(playlist.id, playlistId), eq(playlist.ownerId, userId)));
-  if (!found) throw notFoundError;
-  return found;
+  if (!found) throw playlistNotFound();
+  const tracks = await db
+    .select()
+    .from(track)
+    .where(eq(track.playlistId, playlistId))
+    .orderBy(asc(track.position));
+  return { ...found, tracks };
+}
+
+export type TrackInput = { artist: string; title: string; url?: string; note?: string };
+
+const optionalText = (schema: z.ZodType<string, string>) =>
+  z
+    .string()
+    .trim()
+    .default("")
+    .transform((value) => (value === "" ? null : value))
+    .pipe(schema.nullable());
+
+const trackInputSchema = z.object({
+  artist: z.string().trim().min(1).max(TRACK_ARTIST_MAX),
+  title: z.string().trim().min(1).max(TRACK_TITLE_MAX),
+  url: optionalText(z.url({ protocol: /^https?$/ }).max(TRACK_URL_MAX)),
+  note: optionalText(z.string().max(TRACK_NOTE_MAX)),
+});
+
+function parseTrackInput(input: TrackInput) {
+  const result = trackInputSchema.safeParse(input);
+  if (!result.success) {
+    throw new PlaylistError(
+      "invalid",
+      `Виконавець і назва обов'язкові й мають бути до ${TRACK_TITLE_MAX} символів, нотатка — до ${TRACK_NOTE_MAX}. Посилання має починатися з http:// або https:// і бути до ${TRACK_URL_MAX} символів.`,
+    );
+  }
+  return result.data;
+}
+
+export async function addTrack(userId: string | null, playlistId: string, input: TrackInput) {
+  const values = parseTrackInput(input);
+  return db.transaction(async (tx) => {
+    await lockOwnedPlaylist(tx, userId, playlistId);
+    const [{ last, total }] = await tx
+      .select({ last: max(track.position), total: count() })
+      .from(track)
+      .where(eq(track.playlistId, playlistId));
+    if (total >= TRACKS_PER_PLAYLIST_MAX) {
+      throw new PlaylistError(
+        "limit-exceeded",
+        `У плейлисті може бути не більше ${TRACKS_PER_PLAYLIST_MAX} треків. Видаліть непотрібні, щоб додати новий.`,
+      );
+    }
+    const [created] = await tx
+      .insert(track)
+      .values({
+        playlistId,
+        position: (last ?? -1) + 1,
+        ...values,
+      })
+      .returning();
+    await markPlaylistChanged(tx, playlistId);
+    return created;
+  });
+}
+
+function trackNotFound() {
+  return new PlaylistError("not-found", "Трек не знайдено.");
+}
+
+const trackIdSchema = z.uuid();
+
+async function lockOwnedTrack(tx: Transaction, userId: string | null, trackId: string) {
+  if (!userId || !trackIdSchema.safeParse(trackId).success) throw trackNotFound();
+  const [found] = await tx
+    .select({ playlistId: track.playlistId })
+    .from(track)
+    .innerJoin(playlist, eq(playlist.id, track.playlistId))
+    .where(and(eq(track.id, trackId), eq(playlist.ownerId, userId)))
+    .for("update", { of: playlist });
+  if (!found) throw trackNotFound();
+  return found.playlistId;
+}
+
+export async function updateTrack(userId: string | null, trackId: string, input: TrackInput) {
+  const values = parseTrackInput(input);
+  return db.transaction(async (tx) => {
+    const playlistId = await lockOwnedTrack(tx, userId, trackId);
+    const [updated] = await tx.update(track).set(values).where(eq(track.id, trackId)).returning();
+    await markPlaylistChanged(tx, playlistId);
+    return updated;
+  });
+}
+
+export async function removeTrack(userId: string | null, trackId: string) {
+  await db.transaction(async (tx) => {
+    const playlistId = await lockOwnedTrack(tx, userId, trackId);
+    await tx.delete(track).where(eq(track.id, trackId));
+    await markPlaylistChanged(tx, playlistId);
+  });
 }

@@ -3,7 +3,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { getCurrentUser } from "@/auth/current-user";
+import { addTrackAction } from "@/app/playlists/actions";
 import { getPlaylistForOwner, PlaylistError } from "@/playlists/playlists";
+import { formatTrackCount } from "@/playlists/track-count";
+import { TrackForm } from "./track-form";
+import { TrackItem } from "./track-item";
 
 export const metadata: Metadata = { title: "Плейлист · Плейлисти" };
 
@@ -32,6 +36,22 @@ async function OwnedPlaylist({ params }: Pick<PageProps<"/playlists/[id]">, "par
       {playlist.description && (
         <p className="whitespace-pre-line break-words text-muted-foreground">{playlist.description}</p>
       )}
+      <section className="flex flex-col gap-3">
+        <h2 className="text-lg font-medium">Треки · {formatTrackCount(playlist.tracks.length)}</h2>
+        {playlist.tracks.length === 0 ? (
+          <p className="text-muted-foreground">Тут поки порожньо. Додайте перший трек.</p>
+        ) : (
+          <ol aria-label="Треки" className="flex flex-col divide-y rounded-xl border">
+            {playlist.tracks.map((track, index) => (
+              <TrackItem key={track.id} track={track} number={index + 1} />
+            ))}
+          </ol>
+        )}
+      </section>
+      <section className="flex flex-col gap-4 rounded-xl border p-4">
+        <h2 className="text-lg font-medium">Новий трек</h2>
+        <TrackForm label="Новий трек" submitLabel="Додати трек" action={addTrackAction.bind(null, playlist.id)} />
+      </section>
     </main>
   );
 }
