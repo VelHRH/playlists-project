@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, useSyncExternalStore } from "react";
+import { useId, useSyncExternalStore } from "react";
 import {
   disableSharingAction,
   enableSharingAction,
@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useClipboardCopy } from "../use-clipboard-copy";
 
 const subscribeToNothing = () => () => {};
 
@@ -19,7 +20,7 @@ function useOrigin() {
 export function SharePanel({ playlistId, shareToken }: { playlistId: string; shareToken: string | null }) {
   const origin = useOrigin();
   const inputId = useId();
-  const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
+  const { copy, statusOf } = useClipboardCopy();
 
   if (!shareToken) {
     return (
@@ -35,10 +36,7 @@ export function SharePanel({ playlistId, shareToken }: { playlistId: string; sha
 
   const url = `${origin}/s/${shareToken}`;
 
-  async function copy() {
-    await navigator.clipboard.writeText(url);
-    setCopiedUrl(url);
-  }
+  const status = statusOf(url);
 
   return (
     <section aria-label="Доступ за посиланням" className="flex flex-col gap-3 rounded-xl border p-4">
@@ -48,12 +46,12 @@ export function SharePanel({ playlistId, shareToken }: { playlistId: string; sha
         <Label htmlFor={inputId}>Посилання</Label>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Input id={inputId} value={url} readOnly onFocus={(event) => event.currentTarget.select()} />
-          <Button type="button" onClick={copy}>
+          <Button type="button" onClick={() => copy(url)}>
             Скопіювати посилання
           </Button>
         </div>
         <p role="status" className="text-sm text-muted-foreground">
-          {copiedUrl === url ? "Посилання скопійовано." : ""}
+          {status === "copied" ? "Посилання скопійовано." : status === "failed" ? "Не вдалося скопіювати посилання." : ""}
         </p>
       </div>
       <div className="flex flex-wrap gap-2">
