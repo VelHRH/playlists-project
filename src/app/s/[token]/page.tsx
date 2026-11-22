@@ -8,6 +8,7 @@ import { TrackLine } from "@/app/playlists/track-line";
 import { buttonVariants } from "@/components/ui/button";
 import { formatTrackCount } from "@/lib/track-count";
 import { getSharedPlaylist, PlaylistError } from "@/playlists/playlists";
+import { CopyAsText } from "@/app/playlists/copy-as-text";
 import { SaveCopy } from "./save-copy";
 
 export const metadata: Metadata = { title: "Плейлист · Плейлисти", robots: { index: false } };
@@ -57,7 +58,10 @@ async function SharedPlaylist({ params }: Pick<PageProps<"/s/[token]">, "params"
         <p className="whitespace-pre-line break-words text-muted-foreground">{playlist.description}</p>
       )}
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-medium">Треки · {formatTrackCount(playlist.tracks.length)}</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-medium">Треки · {formatTrackCount(playlist.tracks.length)}</h2>
+          {playlist.tracks.length > 0 && <CopyAsText tracks={playlist.tracks} />}
+        </div>
         {playlist.tracks.length === 0 ? (
           <p className="text-muted-foreground">У цьому плейлисті поки немає треків.</p>
         ) : (

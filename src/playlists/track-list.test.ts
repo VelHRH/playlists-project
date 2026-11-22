@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseTrackList } from "./track-list";
+import { formatTrackList, parseTrackList } from "./track-list";
 
 describe("parseTrackList", () => {
   it("reads one track per line in order", () => {
@@ -88,5 +88,36 @@ describe("parseTrackList", () => {
 
   it("returns nothing for empty text", () => {
     expect(parseTrackList("  \n\n ")).toEqual({ tracks: [], errors: [] });
+  });
+});
+
+describe("formatTrackList", () => {
+  it("writes one «Artist - Title» line per track in order", () => {
+    const text = formatTrackList([
+      { artist: "Океан Ельзи", title: "Обійми" },
+      { artist: "ДахаБраха", title: "Vesna" },
+    ]);
+
+    expect(text).toBe("Океан Ельзи - Обійми\nДахаБраха - Vesna");
+  });
+
+  it("returns empty text for no tracks", () => {
+    expect(formatTrackList([])).toBe("");
+  });
+});
+
+describe("formatTrackList → parseTrackList", () => {
+  it("reads back the same artists and titles without errors, hyphenated and dashed titles included", () => {
+    const tracks = [
+      { artist: "Jay-Z", title: "Re-Make" },
+      { artist: "The Ting Tings", title: "Shut Up - Let Go" },
+      { artist: "Kalush", title: "Стефанія — Remix – 2022" },
+      { artist: "Бумбокс", title: "Вахтерам-2" },
+      { artist: "а".repeat(200), title: "б".repeat(200) },
+      { artist: "Океан Ельзи", title: "Обійми" },
+      { artist: "Океан Ельзи", title: "Обійми" },
+    ];
+
+    expect(parseTrackList(formatTrackList(tracks))).toEqual({ tracks, errors: [] });
   });
 });

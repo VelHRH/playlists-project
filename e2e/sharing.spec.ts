@@ -64,7 +64,7 @@ test("owner shares a playlist by link, a guest views it, and the link dies when 
   const trackLink = track.getByRole("link", { name: "Vesna" });
   await expect(trackLink).toHaveAttribute("target", "_blank");
   await expect(trackLink).toHaveAttribute("rel", "noopener noreferrer");
-  await expect(guest.getByRole("main").getByRole("button")).toHaveCount(0);
+  await expect(guest.getByRole("main").getByRole("button")).toHaveText(["Скопіювати як текст"]);
   await expect(guest.getByRole("link", { name: "Редагувати плейлист" })).toHaveCount(0);
 
   await page.getByRole("link", { name: /Літо/ }).click();
