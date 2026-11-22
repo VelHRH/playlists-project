@@ -13,9 +13,11 @@ test("a guest saves a copy of a shared playlist after signing up and finds it in
 }) => {
   await page.goto("/sign-up");
   await signUp(page, "Олена");
+  await page.getByRole("button", { name: "Новий плейлист" }).click();
   await page.getByLabel("Назва").fill("Літо");
   await page.getByLabel("Опис").fill("Для дороги");
   await page.getByRole("button", { name: "Створити плейлист" }).click();
+  await page.getByRole("button", { name: "Додати трек" }).click();
   const form = page.getByRole("form", { name: "Новий трек" });
   await form.getByLabel("Виконавець").fill("ДахаБраха");
   await form.getByLabel("Назва").fill("Vesna");
@@ -23,7 +25,7 @@ test("a guest saves a copy of a shared playlist after signing up and finds it in
   await expect(page.getByRole("list", { name: "Треки" }).getByRole("listitem")).toHaveCount(1);
   const sharing = page.getByRole("region", { name: "Доступ за посиланням" });
   await sharing.getByRole("button", { name: "Увімкнути доступ за посиланням" }).click();
-  const sharedUrl = await sharing.getByLabel("Посилання").inputValue();
+  const sharedUrl = await sharing.getByLabel("Посилання", { exact: true }).inputValue();
   expect(sharedUrl).toMatch(/\/s\/[A-Za-z0-9_-]{22,}$/);
 
   const viewerContext = await browser.newContext();

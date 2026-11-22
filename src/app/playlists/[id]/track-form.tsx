@@ -44,7 +44,7 @@ export function TrackForm({ label, submitLabel, action, track, onSaved, onCancel
   const field = (name: string) => `${idPrefix}-${name}`;
 
   return (
-    <form ref={formRef} onSubmit={handleSubmit} aria-label={label} className="flex flex-col gap-3">
+    <form ref={formRef} onSubmit={handleSubmit} aria-label={label} className="flex flex-col gap-4">
       <fieldset disabled={pending} className="contents">
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="flex flex-col gap-2">
@@ -84,15 +84,15 @@ export function TrackForm({ label, submitLabel, action, track, onSaved, onCancel
           {state.error}
         </p>
       )}
-      <div className="flex gap-2">
-        <Button type="submit" disabled={pending}>
-          {submitLabel}
-        </Button>
+      <div className="flex justify-end gap-2 pt-1">
         {onCancel && (
           <Button type="button" variant="outline" onClick={onCancel}>
             Скасувати
           </Button>
         )}
+        <Button type="submit" disabled={pending}>
+          {submitLabel}
+        </Button>
       </div>
     </form>
   );

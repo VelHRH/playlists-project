@@ -7,10 +7,12 @@ async function signUpWithPlaylist(page: Page) {
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Пароль").fill("correct-horse-battery");
   await page.getByRole("button", { name: "Зареєструватися" }).click();
+  await page.getByRole("button", { name: "Новий плейлист" }).click();
   await page.getByLabel("Назва").fill("Літо");
   await page.getByLabel("Опис").fill("Для дороги");
   await page.getByRole("button", { name: "Створити плейлист" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Літо" })).toBeVisible();
+  await page.getByRole("button", { name: "Додати трек" }).click();
   const form = page.getByRole("form", { name: "Новий трек" });
   await form.getByLabel("Виконавець").fill("ДахаБраха");
   await form.getByLabel("Назва").fill("Vesna");
@@ -37,7 +39,7 @@ test("owner shares a playlist by link, a guest views it, and the link dies when 
   await expect(sharing).toContainText("Плейлист приватний");
 
   await sharing.getByRole("button", { name: "Увімкнути доступ за посиланням" }).click();
-  const linkField = sharing.getByLabel("Посилання");
+  const linkField = sharing.getByLabel("Посилання", { exact: true });
   await expect(linkField).toHaveValue(/\/s\/[A-Za-z0-9_-]{22,}$/);
   const firstUrl = await linkField.inputValue();
   expect(firstUrl.startsWith(new URL(page.url()).origin)).toBe(true);
@@ -69,7 +71,9 @@ test("owner shares a playlist by link, a guest views it, and the link dies when 
   const trackLink = track.getByRole("link", { name: "Vesna" });
   await expect(trackLink).toHaveAttribute("target", "_blank");
   await expect(trackLink).toHaveAttribute("rel", "noopener noreferrer");
-  await expect(guest.getByRole("main").getByRole("button")).toHaveText(["Скопіювати як текст"]);
+  const guestButtons = guest.getByRole("main").getByRole("button");
+  await expect(guestButtons).toHaveCount(1);
+  await expect(guestButtons).toHaveAccessibleName("Скопіювати як текст");
   await expect(guest.getByRole("link", { name: "Редагувати плейлист" })).toHaveCount(0);
   await guest.getByRole("button", { name: "Скопіювати як текст" }).click();
   await expect(guest.getByRole("status").filter({ hasText: "Текст скопійовано." })).toBeVisible();

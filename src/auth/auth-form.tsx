@@ -66,7 +66,7 @@ export function AuthForm({
           {successMessage}
         </p>
       )}
-      <Button type="submit" variant={submitVariant} disabled={pending}>
+      <Button type="submit" variant={submitVariant} disabled={pending} className="mt-1 h-10">
         {submitLabel}
       </Button>
     </form>

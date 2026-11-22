@@ -31,7 +31,7 @@ function InvalidLink() {
       <p role="alert" className="text-sm text-destructive">
         Посилання для скидання пароля недійсне або застаріло.
       </p>
-      <Link href="/forgot-password" className="text-sm font-medium underline">
+      <Link href="/forgot-password" className="text-link text-sm font-medium">
         Запросити нове посилання
       </Link>
     </div>

@@ -75,6 +75,7 @@ test("user changes the password only with the correct current password", async (
 
 test("user deletes the account after confirming and becomes a guest", async ({ page }) => {
   const email = await signUp(page, "Марія");
+  await page.getByRole("button", { name: "Новий плейлист" }).click();
   await page.getByLabel("Назва").fill("Літо");
   await page.getByRole("button", { name: "Створити плейлист" }).click();
   await expect(page.getByRole("heading", { name: "Літо" })).toBeVisible();

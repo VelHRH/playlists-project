@@ -26,7 +26,7 @@ export function SignInForm() {
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
           <Label htmlFor="password">Пароль</Label>
-          <Link href="/forgot-password" className="text-sm text-muted-foreground underline">
+          <Link href="/forgot-password" className="text-link text-sm text-muted-foreground">
             Забули пароль?
           </Link>
         </div>
