@@ -3,9 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { getCurrentUser } from "@/auth/current-user";
-import { addTrackAction } from "@/app/playlists/actions";
+import { addTrackAction, addTracksFromTextAction } from "@/app/playlists/actions";
 import { getPlaylistForOwner, PlaylistError } from "@/playlists/playlists";
 import { formatTrackCount } from "@/lib/track-count";
+import { BulkPasteDialog } from "./bulk-paste-dialog";
 import { SharePanel } from "./share-panel";
 import { TrackForm } from "./track-form";
 import { TrackItem } from "./track-item";
@@ -50,7 +51,10 @@ async function OwnedPlaylist({ params }: Pick<PageProps<"/playlists/[id]">, "par
         )}
       </section>
       <section className="flex flex-col gap-4 rounded-xl border p-4">
-        <h2 className="text-lg font-medium">Новий трек</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-medium">Новий трек</h2>
+          <BulkPasteDialog action={addTracksFromTextAction.bind(null, playlist.id)} />
+        </div>
         <TrackForm label="Новий трек" submitLabel="Додати трек" action={addTrackAction.bind(null, playlist.id)} />
       </section>
       <SharePanel playlistId={playlist.id} shareToken={playlist.shareToken} />

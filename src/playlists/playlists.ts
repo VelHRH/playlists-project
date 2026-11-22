@@ -4,6 +4,7 @@ import { z } from "zod";
 import { db } from "@/db/client";
 import { playlist, track, user } from "@/db/schema";
 import {
+  BULK_PASTE_LINES_MAX,
   PLAYLIST_DESCRIPTION_MAX,
   PLAYLIST_TITLE_MAX,
   PLAYLISTS_PER_USER_MAX,
@@ -14,8 +15,10 @@ import {
   TRACKS_PER_PLAYLIST_MAX,
 } from "./limits";
 import { PlaylistError } from "./playlist-error";
+import { parseTrackList } from "./track-list";
 
 export { PlaylistError, type PlaylistErrorCode } from "./playlist-error";
+export { parseTrackList, type ParsedTrack, type TrackListError } from "./track-list";
 
 export type PlaylistInput = { title: string; description?: string };
 
@@ -143,14 +146,19 @@ function parseTrackInput(input: TrackInput) {
   return result.data;
 }
 
+async function trackTally(tx: Transaction, playlistId: string) {
+  const [tally] = await tx
+    .select({ last: max(track.position), total: count() })
+    .from(track)
+    .where(eq(track.playlistId, playlistId));
+  return tally;
+}
+
 export async function addTrack(userId: string | null, playlistId: string, input: TrackInput) {
   const values = parseTrackInput(input);
   return db.transaction(async (tx) => {
     await lockOwnedPlaylist(tx, userId, playlistId);
-    const [{ last, total }] = await tx
-      .select({ last: max(track.position), total: count() })
-      .from(track)
-      .where(eq(track.playlistId, playlistId));
+    const { last, total } = await trackTally(tx, playlistId);
     if (total >= TRACKS_PER_PLAYLIST_MAX) {
       throw new PlaylistError(
         "limit-exceeded",
@@ -164,6 +172,43 @@ export async function addTrack(userId: string | null, playlistId: string, input:
         position: (last ?? -1) + 1,
         ...values,
       })
+      .returning();
+    await markPlaylistChanged(tx, playlistId);
+    return created;
+  });
+}
+
+export async function addTracksFromText(userId: string | null, playlistId: string, text: string) {
+  const { tracks: parsed, errors } = parseTrackList(text);
+  if (parsed.length + errors.length > BULK_PASTE_LINES_MAX) {
+    throw new PlaylistError(
+      "limit-exceeded",
+      `За раз можна вставити не більше ${BULK_PASTE_LINES_MAX} рядків. Розділіть список на частини.`,
+    );
+  }
+  if (errors.length > 0) {
+    throw new PlaylistError(
+      "invalid",
+      `Виправте рядки ${errors.map((error) => error.line).join(", ")}: потрібен формат «Виконавець - Назва», виконавець і назва — до ${TRACK_TITLE_MAX} символів.`,
+    );
+  }
+  if (parsed.length === 0) {
+    throw new PlaylistError("invalid", "Вставте хоча б один рядок у форматі «Виконавець - Назва».");
+  }
+  const tracks = parsed.map(parseTrackInput);
+  return db.transaction(async (tx) => {
+    await lockOwnedPlaylist(tx, userId, playlistId);
+    const { last, total } = await trackTally(tx, playlistId);
+    if (total + tracks.length > TRACKS_PER_PLAYLIST_MAX) {
+      throw new PlaylistError(
+        "limit-exceeded",
+        `У плейлисті може бути не більше ${TRACKS_PER_PLAYLIST_MAX} треків. Зараз їх ${total}, тож можна додати ще ${TRACKS_PER_PLAYLIST_MAX - total}, а у вставці — ${tracks.length}.`,
+      );
+    }
+    const start = (last ?? -1) + 1;
+    const created = await tx
+      .insert(track)
+      .values(tracks.map((t, index) => ({ playlistId, position: start + index, ...t })))
       .returning();
     await markPlaylistChanged(tx, playlistId);
     return created;

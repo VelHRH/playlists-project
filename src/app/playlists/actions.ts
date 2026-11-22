@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/auth/current-user";
 import { signInReturningTo } from "@/auth/return-path";
 import {
   addTrack,
+  addTracksFromText,
   copySharedPlaylist,
   createPlaylist,
   disableSharing,
@@ -76,6 +77,14 @@ export async function updateTrackAction(
   form: FormData,
 ): Promise<TrackFormState> {
   return saveTrack(previous, (userId) => updateTrack(userId, trackId, trackInput(form)));
+}
+
+export async function addTracksFromTextAction(
+  playlistId: string,
+  previous: TrackFormState,
+  form: FormData,
+): Promise<TrackFormState> {
+  return saveTrack(previous, (userId) => addTracksFromText(userId, playlistId, String(form.get("text") ?? "")));
 }
 
 async function mutateIgnoringNotFound(mutate: (userId: string | null) => Promise<unknown>) {
