@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { and, asc, count, desc, eq, max } from "drizzle-orm";
+import { and, asc, count, desc, eq, max, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db/client";
 import { playlist, track, user } from "@/db/schema";
@@ -247,6 +247,33 @@ export async function removeTrack(userId: string | null, trackId: string) {
   await db.transaction(async (tx) => {
     const playlistId = await lockOwnedTrack(tx, userId, trackId);
     await tx.delete(track).where(eq(track.id, trackId));
+    await markPlaylistChanged(tx, playlistId);
+  });
+}
+
+function invalidTrackOrder() {
+  return new PlaylistError("invalid", "Порядок треків застарів. Оновіть сторінку й спробуйте ще раз.");
+}
+
+export async function reorderTracks(userId: string | null, playlistId: string, trackIds: string[]) {
+  await db.transaction(async (tx) => {
+    await lockOwnedPlaylist(tx, userId, playlistId);
+    const current = new Set(
+      (await tx.select({ id: track.id }).from(track).where(eq(track.playlistId, playlistId))).map((t) => t.id),
+    );
+    const requested = new Set(trackIds);
+    if (
+      requested.size !== trackIds.length ||
+      requested.size !== current.size ||
+      trackIds.some((id) => !current.has(id))
+    ) {
+      throw invalidTrackOrder();
+    }
+    await tx.execute(sql`
+      update ${track} set position = ordered.ordinality - 1
+      from unnest(${sql.param(trackIds)}::uuid[]) with ordinality as ordered(id, ordinality)
+      where ${track.id} = ordered.id and ${track.playlistId} = ${playlistId}
+    `);
     await markPlaylistChanged(tx, playlistId);
   });
 }

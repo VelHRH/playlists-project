@@ -14,6 +14,7 @@ import {
   PlaylistError,
   regenerateShareToken,
   removeTrack,
+  reorderTracks,
   updateTrack,
   type TrackInput,
 } from "@/playlists/playlists";
@@ -99,6 +100,21 @@ async function mutateIgnoringNotFound(mutate: (userId: string | null) => Promise
 
 export async function removeTrackAction(trackId: string) {
   await mutateIgnoringNotFound((userId) => removeTrack(userId, trackId));
+}
+
+export type ReorderTracksState = { error: string | null };
+
+export async function reorderTracksAction(playlistId: string, trackIds: string[]): Promise<ReorderTracksState> {
+  const user = await getCurrentUser();
+  try {
+    await reorderTracks(user?.id ?? null, playlistId, trackIds);
+  } catch (error) {
+    if (!(error instanceof PlaylistError)) throw error;
+    refresh();
+    return { error: error.message };
+  }
+  refresh();
+  return { error: null };
 }
 
 export async function enableSharingAction(playlistId: string) {

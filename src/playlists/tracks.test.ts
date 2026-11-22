@@ -7,6 +7,7 @@ import {
   getPlaylistForOwner,
   listMyPlaylists,
   removeTrack,
+  reorderTracks,
   updateTrack,
 } from "./playlists";
 
@@ -272,6 +273,91 @@ describe("tracks", () => {
       await removeTrack(owner, added.id);
 
       await expect(removeTrack(owner, added.id)).rejects.toMatchObject({ code: "not-found" });
+    });
+  });
+
+  describe("reordering", () => {
+    type Orders = { ids: string[]; foreign: string };
+
+    async function playlistWithTracks(owner: string, titles: string[]) {
+      const { id } = await createPlaylist(owner, { title: "Літо" });
+      const ids: string[] = [];
+      for (const title of titles) ids.push((await addTrack(owner, id, { artist: "А", title })).id);
+      return { id, ids };
+    }
+
+    it("saves the full new order", async () => {
+      const owner = await createUser("Олена");
+      const { id, ids } = await playlistWithTracks(owner, ["Перший", "Другий", "Третій"]);
+
+      await reorderTracks(owner, id, [ids[2], ids[0], ids[1]]);
+
+      expect((await getPlaylistForOwner(owner, id)).tracks.map((t) => t.title)).toEqual([
+        "Третій",
+        "Перший",
+        "Другий",
+      ]);
+    });
+
+    it.each([
+      { case: "a missing track", order: ({ ids }: Orders) => [ids[1], ids[0]] },
+      { case: "an extra unknown track", order: ({ ids }: Orders) => [...ids, crypto.randomUUID()] },
+      { case: "a duplicated track", order: ({ ids }: Orders) => [ids[2], ids[2], ids[0], ids[1]] },
+      { case: "a repeat in place of a track", order: ({ ids }: Orders) => [ids[2], ids[2], ids[0]] },
+      { case: "a track from another playlist", order: ({ ids, foreign }: Orders) => [ids[2], ids[1], foreign] },
+      { case: "a malformed id", order: ({ ids }: Orders) => [ids[2], ids[1], "not-a-track"] },
+    ])("rejects $case as invalid data and keeps the order", async ({ order }) => {
+      const owner = await createUser("Олена");
+      const { id, ids } = await playlistWithTracks(owner, ["Перший", "Другий", "Третій"]);
+      const other = await playlistWithTracks(owner, ["Чужий"]);
+
+      const attempt = reorderTracks(owner, id, order({ ids, foreign: other.ids[0] }));
+
+      await expect(attempt).rejects.toMatchObject({ code: "invalid" });
+      expect((await getPlaylistForOwner(owner, id)).tracks.map((t) => t.title)).toEqual([
+        "Перший",
+        "Другий",
+        "Третій",
+      ]);
+      expect((await getPlaylistForOwner(owner, other.id)).tracks.map((t) => t.title)).toEqual(["Чужий"]);
+    });
+
+    it.each([
+      { case: "another user", viewer: "other" },
+      { case: "a guest", viewer: "guest" },
+    ] as const)("reports someone else's playlist as not found to $case", async ({ viewer }) => {
+      const owner = await createUser("Олена");
+      const other = await createUser("Тарас");
+      const { id, ids } = await playlistWithTracks(owner, ["Перший", "Другий"]);
+
+      const attempt = reorderTracks(viewer === "other" ? other : null, id, [ids[1], ids[0]]);
+
+      await expect(attempt).rejects.toMatchObject({ code: "not-found" });
+      expect((await getPlaylistForOwner(owner, id)).tracks.map((t) => t.title)).toEqual(["Перший", "Другий"]);
+    });
+
+    it("moves the playlist to the top of the list", async () => {
+      const owner = await createUser("Олена");
+      const { id, ids } = await playlistWithTracks(owner, ["Перший", "Другий"]);
+      await createPlaylist(owner, { title: "Зима" });
+
+      await reorderTracks(owner, id, [ids[1], ids[0]]);
+
+      expect((await listMyPlaylists(owner)).map((p) => p.title)).toEqual(["Літо", "Зима"]);
+    });
+
+    it("adds the next track after the reordered ones", async () => {
+      const owner = await createUser("Олена");
+      const { id, ids } = await playlistWithTracks(owner, ["Перший", "Другий"]);
+      await reorderTracks(owner, id, [ids[1], ids[0]]);
+
+      await addTrack(owner, id, { artist: "А", title: "Третій" });
+
+      expect((await getPlaylistForOwner(owner, id)).tracks.map((t) => t.title)).toEqual([
+        "Другий",
+        "Перший",
+        "Третій",
+      ]);
     });
   });
 });

@@ -90,3 +90,60 @@ test("owner pastes a list, fixes the unrecognised line and saves the tracks in o
     /Jay-Z — Re-Make/,
   ]);
 });
+
+test("owner reorders tracks with the arrows and by dragging, and the order survives a reload", async ({ page }) => {
+  await signUpWithPlaylist(page);
+  const tracks = page.getByRole("list", { name: "Треки" });
+  for (const title of ["Перший", "Другий", "Третій"]) {
+    await addTrack(page, { artist: "А", title });
+    await expect(tracks.getByRole("listitem").last()).toContainText(title);
+  }
+
+  await expect(page.getByRole("button", { name: "Перемістити трек 1 вгору" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Перемістити трек 3 вниз" })).toBeDisabled();
+
+  await page.getByRole("button", { name: "Перемістити трек 1 вниз" }).click();
+  await expect(tracks.getByRole("listitem")).toHaveText([/Другий/, /Перший/, /Третій/]);
+
+  const handle = page.getByRole("button", { name: "Перетягнути трек 3" });
+  const target = tracks.getByRole("listitem").first();
+  const from = (await handle.boundingBox())!;
+  const to = (await target.boundingBox())!;
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(from.x + from.width / 2, to.y + 4, { steps: 15 });
+  await page.mouse.up();
+  await expect(tracks.getByRole("listitem")).toHaveText([/Третій/, /Другий/, /Перший/]);
+  await expect(tracks).toHaveAttribute("aria-busy", "false");
+
+  await page.reload();
+  await expect(tracks.getByRole("listitem")).toHaveText([/Третій/, /Другий/, /Перший/]);
+});
+
+test("owner reorders tracks by dragging on a touch screen", async ({ page, hasTouch }) => {
+  test.skip(!hasTouch, "needs a touch screen");
+  await signUpWithPlaylist(page);
+  const tracks = page.getByRole("list", { name: "Треки" });
+  for (const title of ["Перший", "Другий"]) {
+    await addTrack(page, { artist: "А", title });
+    await expect(tracks.getByRole("listitem").last()).toContainText(title);
+  }
+
+  const from = (await page.getByRole("button", { name: "Перетягнути трек 2" }).boundingBox())!;
+  const to = (await tracks.getByRole("listitem").first().boundingBox())!;
+  const x = from.x + from.width / 2;
+  const cdp = await page.context().newCDPSession(page);
+  const touch = (type: "touchStart" | "touchMove" | "touchEnd", y?: number) =>
+    cdp.send("Input.dispatchTouchEvent", { type, touchPoints: y === undefined ? [] : [{ x, y }] });
+  await touch("touchStart", from.y + from.height / 2);
+  await page.waitForTimeout(400);
+  for (let step = 1; step <= 15; step++) {
+    await touch("touchMove", from.y + from.height / 2 + ((to.y + 4 - from.y - from.height / 2) * step) / 15);
+  }
+  await touch("touchEnd");
+
+  await expect(tracks.getByRole("listitem")).toHaveText([/Другий/, /Перший/]);
+  await expect(tracks).toHaveAttribute("aria-busy", "false");
+  await page.reload();
+  await expect(tracks.getByRole("listitem")).toHaveText([/Другий/, /Перший/]);
+});
