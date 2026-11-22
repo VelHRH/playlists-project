@@ -8,9 +8,9 @@ import { getPlaylistForOwner, PlaylistError } from "@/playlists/playlists";
 import { formatTrackCount } from "@/lib/track-count";
 import { CopyAsText } from "@/app/playlists/copy-as-text";
 import { BulkPasteDialog } from "./bulk-paste-dialog";
+import { OrderedTracks } from "./ordered-tracks";
 import { SharePanel } from "./share-panel";
 import { TrackForm } from "./track-form";
-import { TrackItem } from "./track-item";
 
 export const metadata: Metadata = { title: "Плейлист · Плейлисти" };
 
@@ -47,11 +47,7 @@ async function OwnedPlaylist({ params }: Pick<PageProps<"/playlists/[id]">, "par
         {playlist.tracks.length === 0 ? (
           <p className="text-muted-foreground">Тут поки порожньо. Додайте перший трек.</p>
         ) : (
-          <ol aria-label="Треки" className="flex flex-col divide-y rounded-xl border">
-            {playlist.tracks.map((track, index) => (
-              <TrackItem key={track.id} track={track} number={index + 1} />
-            ))}
-          </ol>
+          <OrderedTracks playlistId={playlist.id} tracks={playlist.tracks} />
         )}
       </section>
       <section className="flex flex-col gap-4 rounded-xl border p-4">
