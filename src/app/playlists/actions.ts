@@ -9,13 +9,16 @@ import {
   addTracksFromText,
   copySharedPlaylist,
   createPlaylist,
+  deletePlaylist,
   disableSharing,
   enableSharing,
   PlaylistError,
   regenerateShareToken,
   removeTrack,
   reorderTracks,
+  updatePlaylist,
   updateTrack,
+  type PlaylistInput,
   type TrackInput,
 } from "@/playlists/playlists";
 
@@ -30,15 +33,47 @@ export async function createPlaylistAction(
 
   let id: string;
   try {
-    ({ id } = await createPlaylist(user.id, {
-      title: String(form.get("title") ?? ""),
-      description: String(form.get("description") ?? ""),
-    }));
+    ({ id } = await createPlaylist(user.id, playlistInput(form)));
   } catch (error) {
     if (error instanceof PlaylistError) return { error: error.message };
     throw error;
   }
   redirect(`/playlists/${id}`);
+}
+
+function playlistInput(form: FormData): PlaylistInput {
+  return {
+    title: String(form.get("title") ?? ""),
+    description: String(form.get("description") ?? ""),
+  };
+}
+
+export type PlaylistFormState = { error: string | null; saved: number };
+
+export async function updatePlaylistAction(
+  playlistId: string,
+  previous: PlaylistFormState,
+  form: FormData,
+): Promise<PlaylistFormState> {
+  const user = await getCurrentUser();
+  try {
+    await updatePlaylist(user?.id ?? null, playlistId, playlistInput(form));
+  } catch (error) {
+    if (error instanceof PlaylistError) return { error: error.message, saved: previous.saved };
+    throw error;
+  }
+  refresh();
+  return { error: null, saved: previous.saved + 1 };
+}
+
+export async function deletePlaylistAction(playlistId: string) {
+  const user = await getCurrentUser();
+  try {
+    await deletePlaylist(user?.id ?? null, playlistId);
+  } catch (error) {
+    if (!(error instanceof PlaylistError && error.code === "not-found")) throw error;
+  }
+  redirect("/");
 }
 
 export type TrackFormState = { error: string | null; saved: number };

@@ -9,6 +9,7 @@ import { formatTrackCount } from "@/lib/track-count";
 import { CopyAsText } from "@/app/playlists/copy-as-text";
 import { BulkPasteDialog } from "./bulk-paste-dialog";
 import { OrderedTracks } from "./ordered-tracks";
+import { PlaylistDetails } from "./playlist-details";
 import { SharePanel } from "./share-panel";
 import { TrackForm } from "./track-form";
 
@@ -35,10 +36,7 @@ async function OwnedPlaylist({ params }: Pick<PageProps<"/playlists/[id]">, "par
       <Link href="/" className="text-sm text-muted-foreground underline">
         ← Мої плейлисти
       </Link>
-      <h1 className="text-3xl font-semibold tracking-tight break-words">{playlist.title}</h1>
-      {playlist.description && (
-        <p className="whitespace-pre-line break-words text-muted-foreground">{playlist.description}</p>
-      )}
+      <PlaylistDetails playlistId={playlist.id} title={playlist.title} description={playlist.description} />
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-medium">Треки · {formatTrackCount(playlist.tracks.length)}</h2>
