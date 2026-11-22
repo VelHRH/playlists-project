@@ -48,34 +48,6 @@ function playlistInput(form: FormData): PlaylistInput {
   };
 }
 
-export type PlaylistFormState = { error: string | null; saved: number };
-
-export async function updatePlaylistAction(
-  playlistId: string,
-  previous: PlaylistFormState,
-  form: FormData,
-): Promise<PlaylistFormState> {
-  const user = await getCurrentUser();
-  try {
-    await updatePlaylist(user?.id ?? null, playlistId, playlistInput(form));
-  } catch (error) {
-    if (error instanceof PlaylistError) return { error: error.message, saved: previous.saved };
-    throw error;
-  }
-  refresh();
-  return { error: null, saved: previous.saved + 1 };
-}
-
-export async function deletePlaylistAction(playlistId: string) {
-  const user = await getCurrentUser();
-  try {
-    await deletePlaylist(user?.id ?? null, playlistId);
-  } catch (error) {
-    if (!(error instanceof PlaylistError && error.code === "not-found")) throw error;
-  }
-  redirect("/");
-}
-
 export type TrackFormState = { error: string | null; saved: number };
 
 function trackInput(form: FormData): TrackInput {
@@ -87,7 +59,7 @@ function trackInput(form: FormData): TrackInput {
   };
 }
 
-async function saveTrack(previous: TrackFormState, save: (userId: string | null) => Promise<unknown>) {
+async function saveForm(previous: TrackFormState, save: (userId: string | null) => Promise<unknown>) {
   const user = await getCurrentUser();
   try {
     await save(user?.id ?? null);
@@ -99,12 +71,22 @@ async function saveTrack(previous: TrackFormState, save: (userId: string | null)
   return { error: null, saved: previous.saved + 1 };
 }
 
+export type PlaylistFormState = TrackFormState;
+
+export async function updatePlaylistAction(
+  playlistId: string,
+  previous: PlaylistFormState,
+  form: FormData,
+): Promise<PlaylistFormState> {
+  return saveForm(previous, (userId) => updatePlaylist(userId, playlistId, playlistInput(form)));
+}
+
 export async function addTrackAction(
   playlistId: string,
   previous: TrackFormState,
   form: FormData,
 ): Promise<TrackFormState> {
-  return saveTrack(previous, (userId) => addTrack(userId, playlistId, trackInput(form)));
+  return saveForm(previous, (userId) => addTrack(userId, playlistId, trackInput(form)));
 }
 
 export async function updateTrackAction(
@@ -112,7 +94,7 @@ export async function updateTrackAction(
   previous: TrackFormState,
   form: FormData,
 ): Promise<TrackFormState> {
-  return saveTrack(previous, (userId) => updateTrack(userId, trackId, trackInput(form)));
+  return saveForm(previous, (userId) => updateTrack(userId, trackId, trackInput(form)));
 }
 
 export async function addTracksFromTextAction(
@@ -120,7 +102,7 @@ export async function addTracksFromTextAction(
   previous: TrackFormState,
   form: FormData,
 ): Promise<TrackFormState> {
-  return saveTrack(previous, (userId) => addTracksFromText(userId, playlistId, String(form.get("text") ?? "")));
+  return saveForm(previous, (userId) => addTracksFromText(userId, playlistId, String(form.get("text") ?? "")));
 }
 
 async function mutateIgnoringNotFound(mutate: (userId: string | null) => Promise<unknown>) {
@@ -131,6 +113,11 @@ async function mutateIgnoringNotFound(mutate: (userId: string | null) => Promise
     if (!(error instanceof PlaylistError && error.code === "not-found")) throw error;
   }
   refresh();
+}
+
+export async function deletePlaylistAction(playlistId: string) {
+  await mutateIgnoringNotFound((userId) => deletePlaylist(userId, playlistId));
+  redirect("/");
 }
 
 export async function removeTrackAction(trackId: string) {
