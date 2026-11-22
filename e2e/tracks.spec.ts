@@ -59,3 +59,34 @@ test("owner adds, edits and removes tracks and sees the count in the list", asyn
   await page.getByRole("link", { name: "← Мої плейлисти" }).click();
   await expect(page.getByRole("list", { name: "Мої плейлисти" }).getByRole("listitem")).toContainText("2 треки");
 });
+
+test("owner pastes a list, fixes the unrecognised line and saves the tracks in order", async ({ page }) => {
+  await signUpWithPlaylist(page);
+  await addTrack(page, { artist: "Kalush", title: "Стефанія" });
+  const tracks = page.getByRole("list", { name: "Треки" });
+  await expect(tracks.getByRole("listitem")).toHaveCount(1);
+
+  await page.getByRole("button", { name: "Вставити списком" }).click();
+  const dialog = page.getByRole("dialog", { name: "Масова вставка" });
+  await dialog.getByLabel("Текст").fill("Океан Ельзи - Обійми\n\nДахаБраха Vesna\nJay-Z — Re-Make");
+  await dialog.getByRole("button", { name: "Переглянути" }).click();
+
+  await expect(dialog.getByRole("list", { name: "Розпізнані треки" }).getByRole("listitem")).toHaveText([
+    /Океан Ельзи — Обійми/,
+    /Jay-Z — Re-Make/,
+  ]);
+  await expect(dialog.getByRole("button", { name: "Зберегти" })).toBeDisabled();
+  await dialog.getByLabel("Рядок 3").fill("ДахаБраха – Vesna");
+  await dialog.getByRole("button", { name: "Перевірити ще раз" }).click();
+  await expect(dialog.getByRole("region", { name: "Нерозпізнані рядки" })).toHaveCount(0);
+  await expect(dialog.getByRole("list", { name: "Розпізнані треки" }).getByRole("listitem")).toHaveCount(3);
+  await dialog.getByRole("button", { name: "Зберегти" }).click();
+
+  await expect(dialog).toBeHidden();
+  await expect(tracks.getByRole("listitem")).toHaveText([
+    /Kalush — Стефанія/,
+    /Океан Ельзи — Обійми/,
+    /ДахаБраха — Vesna/,
+    /Jay-Z — Re-Make/,
+  ]);
+});
