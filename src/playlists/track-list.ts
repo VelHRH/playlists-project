@@ -1,3 +1,5 @@
+import { TRACK_ARTIST_MAX, TRACK_TITLE_MAX } from "./limits";
+
 export type ParsedTrack = { artist: string; title: string };
 export type TrackListError = { line: number; text: string };
 
@@ -12,7 +14,7 @@ export function parseTrackList(text: string) {
     const match = SEPARATOR.exec(line);
     const artist = match ? line.slice(0, match.index).trim() : "";
     const title = match ? line.slice(match.index + match[0].length).trim() : "";
-    if (artist === "" || title === "") {
+    if (artist === "" || title === "" || artist.length > TRACK_ARTIST_MAX || title.length > TRACK_TITLE_MAX) {
       errors.push({ line: index + 1, text: line });
       return;
     }

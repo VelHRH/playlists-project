@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { formatTrackCount } from "@/lib/track-count";
+import { BULK_PASTE_LINES_MAX, TRACK_TITLE_MAX } from "@/playlists/limits";
 import { parseTrackList } from "@/playlists/track-list";
 
 type BulkPasteDialogProps = {
@@ -91,8 +92,8 @@ function BulkPasteSteps({ action, onDone }: BulkPasteDialogProps & { onDone: () 
           className="max-h-[50dvh] min-h-40"
         />
         <p className="text-sm text-muted-foreground">
-          Один трек на рядок у форматі «Виконавець - Назва». Розділювач — дефіс, коротке або довге тире з
-          пробілами.
+          Один трек на рядок у форматі «Виконавець - Назва», до {BULK_PASTE_LINES_MAX} рядків. Розділювач —
+          дефіс, коротке або довге тире з пробілами.
         </p>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -125,7 +126,8 @@ function BulkPasteSteps({ action, onDone }: BulkPasteDialogProps & { onDone: () 
         <section aria-label="Нерозпізнані рядки" className="flex flex-col gap-3">
           <h3 className="font-medium text-destructive">Не вдалося розпізнати · {errors.length}</h3>
           <p className="text-sm text-muted-foreground">
-            Виправте рядки у форматі «Виконавець - Назва» або залиште порожніми, щоб пропустити.
+            Виправте рядки у форматі «Виконавець - Назва» (виконавець і назва — до {TRACK_TITLE_MAX} символів) або
+            залиште порожніми, щоб пропустити.
           </p>
           {errors.map((error) => (
             <div key={error.line} className="flex flex-col gap-2">

@@ -18,6 +18,7 @@ import { PlaylistError } from "./playlist-error";
 import { parseTrackList } from "./track-list";
 
 export { PlaylistError, type PlaylistErrorCode } from "./playlist-error";
+export { parseTrackList, type ParsedTrack, type TrackListError } from "./track-list";
 
 export type PlaylistInput = { title: string; description?: string };
 
@@ -145,14 +146,19 @@ function parseTrackInput(input: TrackInput) {
   return result.data;
 }
 
+async function trackTally(tx: Transaction, playlistId: string) {
+  const [tally] = await tx
+    .select({ last: max(track.position), total: count() })
+    .from(track)
+    .where(eq(track.playlistId, playlistId));
+  return tally;
+}
+
 export async function addTrack(userId: string | null, playlistId: string, input: TrackInput) {
   const values = parseTrackInput(input);
   return db.transaction(async (tx) => {
     await lockOwnedPlaylist(tx, userId, playlistId);
-    const [{ last, total }] = await tx
-      .select({ last: max(track.position), total: count() })
-      .from(track)
-      .where(eq(track.playlistId, playlistId));
+    const { last, total } = await trackTally(tx, playlistId);
     if (total >= TRACKS_PER_PLAYLIST_MAX) {
       throw new PlaylistError(
         "limit-exceeded",
@@ -183,7 +189,7 @@ export async function addTracksFromText(userId: string | null, playlistId: strin
   if (errors.length > 0) {
     throw new PlaylistError(
       "invalid",
-      `Не вдалося розпізнати рядки: ${errors.map((error) => error.line).join(", ")}. Використовуйте формат «Виконавець - Назва».`,
+      `Виправте рядки ${errors.map((error) => error.line).join(", ")}: потрібен формат «Виконавець - Назва», виконавець і назва — до ${TRACK_TITLE_MAX} символів.`,
     );
   }
   if (parsed.length === 0) {
@@ -192,10 +198,7 @@ export async function addTracksFromText(userId: string | null, playlistId: strin
   const tracks = parsed.map(parseTrackInput);
   return db.transaction(async (tx) => {
     await lockOwnedPlaylist(tx, userId, playlistId);
-    const [{ last, total }] = await tx
-      .select({ last: max(track.position), total: count() })
-      .from(track)
-      .where(eq(track.playlistId, playlistId));
+    const { last, total } = await trackTally(tx, playlistId);
     if (total + tracks.length > TRACKS_PER_PLAYLIST_MAX) {
       throw new PlaylistError(
         "limit-exceeded",

@@ -70,6 +70,22 @@ describe("parseTrackList", () => {
     });
   });
 
+  it("reports lines whose artist or title is over 200 characters, so they can be fixed before saving", () => {
+    const text = [
+      `${"а".repeat(200)} - ${"б".repeat(200)}`,
+      `${"а".repeat(201)} - Vesna`,
+      `ДахаБраха - ${"б".repeat(201)}`,
+    ].join("\n");
+
+    expect(parseTrackList(text)).toEqual({
+      tracks: [{ artist: "а".repeat(200), title: "б".repeat(200) }],
+      errors: [
+        { line: 2, text: `${"а".repeat(201)} - Vesna` },
+        { line: 3, text: `ДахаБраха - ${"б".repeat(201)}` },
+      ],
+    });
+  });
+
   it("returns nothing for empty text", () => {
     expect(parseTrackList("  \n\n ")).toEqual({ tracks: [], errors: [] });
   });
