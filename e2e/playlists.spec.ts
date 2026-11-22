@@ -41,3 +41,41 @@ test("user creates a playlist, finds it in the list, and nobody else can open it
   await expectNotFound(guestPage);
   await guest.close();
 });
+
+test("owner renames a playlist, then deletes it after confirming", async ({ page }) => {
+  await signUp(page, "Олена");
+  await page.getByLabel("Назва").fill("Літо");
+  await page.getByLabel("Опис (необов'язково)").fill("Для дороги");
+  await page.getByRole("button", { name: "Створити плейлист" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Літо" })).toBeVisible();
+  const playlistUrl = page.url();
+
+  await page.getByRole("button", { name: "Редагувати плейлист" }).click();
+  const form = page.getByRole("form", { name: "Редагування плейлиста" });
+  await form.getByLabel("Назва").fill("   ");
+  await form.getByRole("button", { name: "Зберегти" }).click();
+  await expect(form.getByRole("alert")).toContainText("Назва обов'язкова");
+
+  await form.getByLabel("Назва").fill("Осінь");
+  await form.getByLabel("Опис (необов'язково)").fill("Для дощу");
+  await form.getByRole("button", { name: "Зберегти" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Осінь" })).toBeVisible();
+  await expect(page.getByText("Для дощу")).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("heading", { level: 1, name: "Осінь" })).toBeVisible();
+
+  const confirm = page.getByRole("dialog", { name: "Видалити плейлист?" });
+  await page.getByRole("button", { name: "Видалити плейлист" }).click();
+  await confirm.getByRole("button", { name: "Скасувати" }).click();
+  await expect(confirm).toBeHidden();
+  await expect(page.getByRole("heading", { level: 1, name: "Осінь" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Видалити плейлист" }).click();
+  await confirm.getByRole("button", { name: "Так, видалити" }).click();
+  await expect(page.getByRole("heading", { name: "Мої плейлисти" })).toBeVisible();
+  await expect(page).toHaveURL("/");
+  await expect(page.getByText("У вас ще немає плейлистів")).toBeVisible();
+
+  await page.goto(playlistUrl);
+  await expect(page.getByRole("heading", { name: "Сторінку не знайдено" })).toBeVisible();
+});

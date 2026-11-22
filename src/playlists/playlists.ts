@@ -118,6 +118,22 @@ export async function getPlaylistForOwner(userId: string | null, playlistId: str
   return { ...found, tracks };
 }
 
+export async function updatePlaylist(userId: string | null, playlistId: string, input: PlaylistInput) {
+  const values = parsePlaylistInput(input);
+  return db.transaction(async (tx) => {
+    await lockOwnedPlaylist(tx, userId, playlistId);
+    const [updated] = await tx.update(playlist).set(values).where(eq(playlist.id, playlistId)).returning();
+    return updated;
+  });
+}
+
+export async function deletePlaylist(userId: string | null, playlistId: string) {
+  await db.transaction(async (tx) => {
+    await lockOwnedPlaylist(tx, userId, playlistId);
+    await tx.delete(playlist).where(eq(playlist.id, playlistId));
+  });
+}
+
 export type TrackInput = { artist: string; title: string; url?: string; note?: string };
 
 const optionalText = (schema: z.ZodType<string, string>) =>

@@ -9,13 +9,16 @@ import {
   addTracksFromText,
   copySharedPlaylist,
   createPlaylist,
+  deletePlaylist,
   disableSharing,
   enableSharing,
   PlaylistError,
   regenerateShareToken,
   removeTrack,
   reorderTracks,
+  updatePlaylist,
   updateTrack,
+  type PlaylistInput,
   type TrackInput,
 } from "@/playlists/playlists";
 
@@ -30,15 +33,19 @@ export async function createPlaylistAction(
 
   let id: string;
   try {
-    ({ id } = await createPlaylist(user.id, {
-      title: String(form.get("title") ?? ""),
-      description: String(form.get("description") ?? ""),
-    }));
+    ({ id } = await createPlaylist(user.id, playlistInput(form)));
   } catch (error) {
     if (error instanceof PlaylistError) return { error: error.message };
     throw error;
   }
   redirect(`/playlists/${id}`);
+}
+
+function playlistInput(form: FormData): PlaylistInput {
+  return {
+    title: String(form.get("title") ?? ""),
+    description: String(form.get("description") ?? ""),
+  };
 }
 
 export type TrackFormState = { error: string | null; saved: number };
@@ -52,7 +59,7 @@ function trackInput(form: FormData): TrackInput {
   };
 }
 
-async function saveTrack(previous: TrackFormState, save: (userId: string | null) => Promise<unknown>) {
+async function saveForm(previous: TrackFormState, save: (userId: string | null) => Promise<unknown>) {
   const user = await getCurrentUser();
   try {
     await save(user?.id ?? null);
@@ -64,12 +71,22 @@ async function saveTrack(previous: TrackFormState, save: (userId: string | null)
   return { error: null, saved: previous.saved + 1 };
 }
 
+export type PlaylistFormState = TrackFormState;
+
+export async function updatePlaylistAction(
+  playlistId: string,
+  previous: PlaylistFormState,
+  form: FormData,
+): Promise<PlaylistFormState> {
+  return saveForm(previous, (userId) => updatePlaylist(userId, playlistId, playlistInput(form)));
+}
+
 export async function addTrackAction(
   playlistId: string,
   previous: TrackFormState,
   form: FormData,
 ): Promise<TrackFormState> {
-  return saveTrack(previous, (userId) => addTrack(userId, playlistId, trackInput(form)));
+  return saveForm(previous, (userId) => addTrack(userId, playlistId, trackInput(form)));
 }
 
 export async function updateTrackAction(
@@ -77,7 +94,7 @@ export async function updateTrackAction(
   previous: TrackFormState,
   form: FormData,
 ): Promise<TrackFormState> {
-  return saveTrack(previous, (userId) => updateTrack(userId, trackId, trackInput(form)));
+  return saveForm(previous, (userId) => updateTrack(userId, trackId, trackInput(form)));
 }
 
 export async function addTracksFromTextAction(
@@ -85,7 +102,7 @@ export async function addTracksFromTextAction(
   previous: TrackFormState,
   form: FormData,
 ): Promise<TrackFormState> {
-  return saveTrack(previous, (userId) => addTracksFromText(userId, playlistId, String(form.get("text") ?? "")));
+  return saveForm(previous, (userId) => addTracksFromText(userId, playlistId, String(form.get("text") ?? "")));
 }
 
 async function mutateIgnoringNotFound(mutate: (userId: string | null) => Promise<unknown>) {
@@ -96,6 +113,11 @@ async function mutateIgnoringNotFound(mutate: (userId: string | null) => Promise
     if (!(error instanceof PlaylistError && error.code === "not-found")) throw error;
   }
   refresh();
+}
+
+export async function deletePlaylistAction(playlistId: string) {
+  await mutateIgnoringNotFound((userId) => deletePlaylist(userId, playlistId));
+  redirect("/");
 }
 
 export async function removeTrackAction(trackId: string) {
