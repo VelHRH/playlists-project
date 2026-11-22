@@ -18,7 +18,7 @@ import { PlaylistError } from "./playlist-error";
 import { parseTrackList } from "./track-list";
 
 export { PlaylistError, type PlaylistErrorCode } from "./playlist-error";
-export { parseTrackList, type ParsedTrack, type TrackListError } from "./track-list";
+export { formatTrackList, parseTrackList, type ParsedTrack, type TrackListError } from "./track-list";
 
 export type PlaylistInput = { title: string; description?: string };
 

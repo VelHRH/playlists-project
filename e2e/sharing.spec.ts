@@ -46,12 +46,17 @@ test("owner shares a playlist by link, a guest views it, and the link dies when 
   await expect(sharing.getByRole("status")).toHaveText("Посилання скопійовано.");
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(firstUrl);
 
+  await page.getByRole("button", { name: "Скопіювати як текст" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Текст скопійовано." })).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe("ДахаБраха - Vesna");
+
   await page.goto(firstUrl);
   await expect(page.getByRole("link", { name: "Редагувати плейлист" })).toBeVisible();
   await page.goto("/");
   await expect(page.getByRole("list", { name: "Мої плейлисти" })).toContainText("за посиланням");
 
   const guestContext = await browser.newContext();
+  await guestContext.grantPermissions(["clipboard-read", "clipboard-write"]);
   const guest = await guestContext.newPage();
   await guest.goto(firstUrl);
   await expect(guest.getByRole("heading", { level: 1, name: "Літо" })).toBeVisible();
@@ -64,8 +69,11 @@ test("owner shares a playlist by link, a guest views it, and the link dies when 
   const trackLink = track.getByRole("link", { name: "Vesna" });
   await expect(trackLink).toHaveAttribute("target", "_blank");
   await expect(trackLink).toHaveAttribute("rel", "noopener noreferrer");
-  await expect(guest.getByRole("main").getByRole("button")).toHaveCount(0);
+  await expect(guest.getByRole("main").getByRole("button")).toHaveText(["Скопіювати як текст"]);
   await expect(guest.getByRole("link", { name: "Редагувати плейлист" })).toHaveCount(0);
+  await guest.getByRole("button", { name: "Скопіювати як текст" }).click();
+  await expect(guest.getByRole("status").filter({ hasText: "Текст скопійовано." })).toBeVisible();
+  expect(await guest.evaluate(() => navigator.clipboard.readText())).toBe("ДахаБраха - Vesna");
 
   await page.getByRole("link", { name: /Літо/ }).click();
   await sharing.getByRole("button", { name: "Перегенерувати посилання" }).click();

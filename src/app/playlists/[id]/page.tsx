@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/auth/current-user";
 import { addTrackAction, addTracksFromTextAction } from "@/app/playlists/actions";
 import { getPlaylistForOwner, PlaylistError } from "@/playlists/playlists";
 import { formatTrackCount } from "@/lib/track-count";
+import { CopyAsText } from "@/app/playlists/copy-as-text";
 import { BulkPasteDialog } from "./bulk-paste-dialog";
 import { SharePanel } from "./share-panel";
 import { TrackForm } from "./track-form";
@@ -39,7 +40,10 @@ async function OwnedPlaylist({ params }: Pick<PageProps<"/playlists/[id]">, "par
         <p className="whitespace-pre-line break-words text-muted-foreground">{playlist.description}</p>
       )}
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-medium">Треки · {formatTrackCount(playlist.tracks.length)}</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-medium">Треки · {formatTrackCount(playlist.tracks.length)}</h2>
+          {playlist.tracks.length > 0 && <CopyAsText tracks={playlist.tracks} />}
+        </div>
         {playlist.tracks.length === 0 ? (
           <p className="text-muted-foreground">Тут поки порожньо. Додайте перший трек.</p>
         ) : (

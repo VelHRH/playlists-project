@@ -22,3 +22,7 @@ export function parseTrackList(text: string) {
   });
   return { tracks, errors };
 }
+
+export function formatTrackList(tracks: ParsedTrack[]) {
+  return tracks.map((track) => `${track.artist} - ${track.title}`).join("\n");
+}
