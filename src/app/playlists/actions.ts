@@ -105,15 +105,13 @@ export async function removeTrackAction(trackId: string) {
 export type ReorderTracksState = { error: string | null };
 
 export async function reorderTracksAction(playlistId: string, trackIds: string[]): Promise<ReorderTracksState> {
-  const user = await getCurrentUser();
   try {
-    await reorderTracks(user?.id ?? null, playlistId, trackIds);
+    await mutateIgnoringNotFound((userId) => reorderTracks(userId, playlistId, trackIds));
   } catch (error) {
     if (!(error instanceof PlaylistError)) throw error;
     refresh();
     return { error: error.message };
   }
-  refresh();
   return { error: null };
 }
 
