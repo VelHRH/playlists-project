@@ -1,8 +1,11 @@
 "use client";
 
-import { startTransition, useActionState, useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { startTransition, useActionState, useEffect, useId, useRef, type FormEvent } from "react";
 import { updatePlaylistAction } from "@/app/playlists/actions";
+import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
+import { Modal } from "@/components/ui/modal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,29 +15,31 @@ import { DeletePlaylistDialog } from "./delete-playlist-dialog";
 type PlaylistDetailsProps = { playlistId: string; title: string; description: string };
 
 export function PlaylistDetails({ playlistId, title, description }: PlaylistDetailsProps) {
-  const [editing, setEditing] = useState(false);
-
-  if (editing) {
-    return (
-      <PlaylistForm
-        playlistId={playlistId}
-        title={title}
-        description={description}
-        onDone={() => setEditing(false)}
-      />
-    );
-  }
-
   return (
-    <div className="flex flex-col gap-3">
-      <h1 className="text-3xl font-semibold tracking-tight break-words">{title}</h1>
-      {description && <p className="whitespace-pre-line break-words text-muted-foreground">{description}</p>}
-      <div className="flex flex-wrap gap-2">
-        <Button type="button" variant="outline" size="sm" onClick={() => setEditing(true)}>
-          Редагувати плейлист
-        </Button>
-        <DeletePlaylistDialog playlistId={playlistId} title={title} />
+    <div className="flex flex-col gap-4">
+      <div className="flex items-start justify-between gap-4">
+        <h1 className="min-w-0 text-4xl font-semibold break-words sm:text-5xl">{title}</h1>
+        <div className="mt-1 flex shrink-0 items-center gap-1 sm:mt-2">
+          <Modal
+            title="Редагувати плейлист"
+            trigger={(open) => (
+              <IconButton label="Редагувати плейлист" size="icon" onClick={open}>
+                <Pencil />
+              </IconButton>
+            )}
+          >
+            {(close) => (
+              <PlaylistForm playlistId={playlistId} title={title} description={description} onDone={close} />
+            )}
+          </Modal>
+          <DeletePlaylistDialog playlistId={playlistId} title={title} />
+        </div>
       </div>
+      {description && (
+        <p className="max-w-[65ch] whitespace-pre-line break-words text-lg leading-8 text-muted-foreground">
+          {description}
+        </p>
+      )}
     </div>
   );
 }
@@ -66,7 +71,7 @@ function PlaylistForm({ playlistId, title, description, onDone }: PlaylistDetail
     <form
       onSubmit={handleSubmit}
       aria-label="Редагування плейлиста"
-      className="flex flex-col gap-3 rounded-xl border p-4"
+      className="flex flex-col gap-4"
     >
       <fieldset disabled={pending} className="contents">
         <div className="flex flex-col gap-2">
@@ -88,12 +93,12 @@ function PlaylistForm({ playlistId, title, description, onDone }: PlaylistDetail
           {state.error}
         </p>
       )}
-      <div className="flex gap-2">
-        <Button type="submit" disabled={pending}>
-          Зберегти
-        </Button>
+      <div className="flex justify-end gap-2 pt-1">
         <Button type="button" variant="outline" disabled={pending} onClick={onDone}>
           Скасувати
+        </Button>
+        <Button type="submit" disabled={pending}>
+          Зберегти
         </Button>
       </div>
     </form>

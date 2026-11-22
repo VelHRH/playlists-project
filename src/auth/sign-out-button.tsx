@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { authClient } from "@/auth/auth-client";
-import { Button } from "@/components/ui/button";
+import { LogOut } from "lucide-react";
+import { IconButton } from "@/components/ui/icon-button";
 
 export function SignOutButton() {
   const router = useRouter();
@@ -17,8 +18,8 @@ export function SignOutButton() {
   }
 
   return (
-    <Button variant="outline" onClick={signOut} disabled={pending}>
-      Вийти
-    </Button>
+    <IconButton label="Вийти" size="icon" onClick={signOut} disabled={pending}>
+      <LogOut />
+    </IconButton>
   );
 }

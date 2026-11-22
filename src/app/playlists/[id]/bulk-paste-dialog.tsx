@@ -1,8 +1,11 @@
 "use client";
 
 import { startTransition, useActionState, useEffect, useId, useRef, useState } from "react";
+import { ListPlus } from "lucide-react";
 import type { TrackFormState } from "@/app/playlists/actions";
 import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
+import { Modal } from "@/components/ui/modal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,30 +24,18 @@ function applyFixes(text: string, fixes: Record<number, string>) {
 }
 
 export function BulkPasteDialog({ action }: BulkPasteDialogProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  const headingId = useId();
-  const [session, setSession] = useState(0);
-  const close = () => dialogRef.current?.close();
-
   return (
-    <>
-      <Button type="button" variant="outline" onClick={() => dialogRef.current?.showModal()}>
-        Вставити списком
-      </Button>
-      <dialog
-        ref={dialogRef}
-        aria-labelledby={headingId}
-        onClose={() => setSession(session + 1)}
-        className="m-auto w-[calc(100%-2rem)] max-w-xl rounded-xl border bg-background p-0 text-foreground backdrop:bg-black/50"
-      >
-        <div className="flex max-h-[85dvh] flex-col gap-4 overflow-y-auto p-4">
-          <h2 id={headingId} className="text-lg font-medium">
-            Масова вставка
-          </h2>
-          <BulkPasteSteps key={session} action={action} onDone={close} />
-        </div>
-      </dialog>
-    </>
+    <Modal
+      title="Масова вставка"
+      className="max-w-xl"
+      trigger={(open) => (
+        <IconButton label="Вставити списком" size="icon" onClick={open}>
+          <ListPlus />
+        </IconButton>
+      )}
+    >
+      {(close) => <BulkPasteSteps action={action} onDone={close} />}
+    </Modal>
   );
 }
 
@@ -96,26 +87,26 @@ function BulkPasteSteps({ action, onDone }: BulkPasteDialogProps & { onDone: () 
           дефіс, коротке або довге тире з пробілами.
         </p>
       </div>
-      <div className="flex flex-wrap gap-2">
-        <Button type="button" disabled={text.trim() === ""} onClick={() => setStep("preview")}>
-          Переглянути
-        </Button>
+      <div className="flex flex-wrap justify-end gap-2">
         <Button type="button" variant="outline" onClick={onDone}>
           Скасувати
+        </Button>
+        <Button type="button" disabled={text.trim() === ""} onClick={() => setStep("preview")}>
+          Переглянути
         </Button>
       </div>
     </>
   ) : (
     <>
       <section className="flex flex-col gap-2">
-        <h3 className="font-medium">Розпізнано · {formatTrackCount(tracks.length)}</h3>
+        <h3 className="font-semibold">Розпізнано · {formatTrackCount(tracks.length)}</h3>
         {tracks.length > 0 && (
-          <ol aria-label="Розпізнані треки" className="flex flex-col divide-y rounded-lg border text-sm">
+          <ol aria-label="Розпізнані треки" className="flex flex-col divide-y rounded-lg border bg-background/60 text-sm">
             {tracks.map((track, index) => (
               <li key={index} className="flex gap-3 px-3 py-2">
-                <span className="w-6 shrink-0 text-right tabular-nums text-muted-foreground">{index + 1}</span>
+                <span className="w-6 shrink-0 text-right font-mono text-xs leading-5 tabular-nums text-muted-foreground">{index + 1}</span>
                 <span className="min-w-0 break-words">
-                  {track.artist} — <span className="font-medium">{track.title}</span>
+                  <span className="text-muted-foreground">{track.artist} —</span> <span className="font-medium">{track.title}</span>
                 </span>
               </li>
             ))}
@@ -124,7 +115,7 @@ function BulkPasteSteps({ action, onDone }: BulkPasteDialogProps & { onDone: () 
       </section>
       {errors.length > 0 && (
         <section aria-label="Нерозпізнані рядки" className="flex flex-col gap-3">
-          <h3 className="font-medium text-destructive">Не вдалося розпізнати · {errors.length}</h3>
+          <h3 className="font-semibold text-destructive">Не вдалося розпізнати · {errors.length}</h3>
           <p className="text-sm text-muted-foreground">
             Виправте рядки у форматі «Виконавець - Назва» (виконавець і назва — до {TRACK_TITLE_MAX} символів) або
             залиште порожніми, щоб пропустити.
@@ -150,12 +141,12 @@ function BulkPasteSteps({ action, onDone }: BulkPasteDialogProps & { onDone: () 
           {state.error}
         </p>
       )}
-      <div className="flex flex-wrap gap-2">
-        <Button type="button" disabled={pending || errors.length > 0 || tracks.length === 0} onClick={save}>
-          Зберегти
-        </Button>
+      <div className="flex flex-wrap justify-end gap-2">
         <Button type="button" variant="outline" disabled={pending} onClick={() => setStep("text")}>
           Назад до тексту
+        </Button>
+        <Button type="button" disabled={pending || errors.length > 0 || tracks.length === 0} onClick={save}>
+          Зберегти
         </Button>
       </div>
     </>

@@ -1,10 +1,11 @@
 "use client";
 
 import { useSortable } from "@dnd-kit/react/sortable";
-import { ArrowDown, ArrowUp, GripVertical } from "lucide-react";
-import { useState } from "react";
+import { GripVertical, Pencil, Trash2 } from "lucide-react";
 import { removeTrackAction, updateTrackAction } from "@/app/playlists/actions";
 import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
+import { Modal } from "@/components/ui/modal";
 import { TrackLine } from "../track-line";
 import { TrackForm } from "./track-form";
 
@@ -13,74 +14,54 @@ export type Track = { id: string; artist: string; title: string; url: string | n
 type TrackItemProps = {
   track: Track;
   index: number;
-  total: number;
-  onMove: (to: number) => void;
 };
 
-export function TrackItem({ track, index, total, onMove }: TrackItemProps) {
-  const [editing, setEditing] = useState(false);
+export function TrackItem({ track, index }: TrackItemProps) {
   const { ref, handleRef, isDragging } = useSortable({ id: track.id, index });
   const number = index + 1;
-
-  if (editing) {
-    return (
-      <li className="px-4 py-3">
-        <TrackForm
-          label={`Редагування треку ${number}`}
-          submitLabel="Зберегти"
-          action={updateTrackAction.bind(null, track.id)}
-          track={track}
-          onSaved={() => setEditing(false)}
-          onCancel={() => setEditing(false)}
-        />
-      </li>
-    );
-  }
 
   return (
     <li
       ref={ref}
       data-dragging={isDragging || undefined}
-      className="flex flex-col gap-2 bg-background px-4 py-3 data-dragging:opacity-60 sm:flex-row sm:items-start sm:justify-between"
+      className="group/track flex items-center gap-1 px-2 py-2.5 transition-colors duration-(--duration-fast) first:rounded-t-xl last:rounded-b-xl hover:bg-accent/40 data-dragging:z-10 data-dragging:rounded-xl data-dragging:bg-card data-dragging:shadow-lg data-dragging:ring-2 data-dragging:ring-primary/40 sm:px-3"
     >
-      <div className="flex min-w-0 items-start gap-1">
-        <Button
-          ref={handleRef}
-          variant="ghost"
-          size="icon-sm"
-          className="-ml-2 shrink-0 cursor-grab touch-none active:cursor-grabbing"
-          aria-label={`Перетягнути трек ${number}`}
-        >
-          <GripVertical />
-        </Button>
+      <Button
+        ref={handleRef}
+        variant="ghost"
+        size="icon-sm"
+        className="cursor-grab touch-none text-muted-foreground/60 hover:text-foreground active:cursor-grabbing"
+        aria-label={`Перетягнути трек ${number}`}
+      >
+        <GripVertical />
+      </Button>
+      <div className="min-w-0 flex-1">
         <TrackLine track={track} number={number} />
       </div>
-      <div className="flex shrink-0 gap-2 pl-9 sm:pl-0">
-        <Button
-          variant="outline"
-          size="icon-sm"
-          aria-label={`Перемістити трек ${number} вгору`}
-          disabled={index === 0}
-          onClick={() => onMove(index - 1)}
+      <div className="flex shrink-0 items-center gap-0.5 sm:opacity-60 sm:transition-opacity sm:duration-(--duration-fast) sm:group-hover/track:opacity-100 sm:group-focus-within/track:opacity-100">
+        <Modal
+          title="Редагувати трек"
+          trigger={(open) => (
+            <IconButton label="Редагувати" onClick={open}>
+              <Pencil />
+            </IconButton>
+          )}
         >
-          <ArrowUp />
-        </Button>
-        <Button
-          variant="outline"
-          size="icon-sm"
-          aria-label={`Перемістити трек ${number} вниз`}
-          disabled={index === total - 1}
-          onClick={() => onMove(index + 1)}
-        >
-          <ArrowDown />
-        </Button>
-        <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
-          Редагувати
-        </Button>
+          {(close) => (
+            <TrackForm
+              label={`Редагування треку ${number}`}
+              submitLabel="Зберегти"
+              action={updateTrackAction.bind(null, track.id)}
+              track={track}
+              onSaved={close}
+              onCancel={close}
+            />
+          )}
+        </Modal>
         <form action={removeTrackAction.bind(null, track.id)}>
-          <Button type="submit" variant="destructive" size="sm">
-            Видалити
-          </Button>
+          <IconButton label="Видалити" type="submit" className="hover:bg-destructive/10 hover:text-destructive">
+            <Trash2 />
+          </IconButton>
         </form>
       </div>
     </li>

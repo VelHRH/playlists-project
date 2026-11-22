@@ -6,7 +6,9 @@ import {
   enableSharingAction,
   regenerateShareTokenAction,
 } from "@/app/playlists/actions";
+import { Check, Copy, Link2, Link2Off, Lock, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useClipboardCopy } from "../use-clipboard-copy";
@@ -24,9 +26,12 @@ export function SharePanel({ playlistId, shareToken }: { playlistId: string; sha
 
   if (!shareToken) {
     return (
-      <section aria-label="Доступ за посиланням" className="flex flex-col gap-3 rounded-xl border p-4">
-        <h2 className="text-lg font-medium">Доступ за посиланням</h2>
-        <p className="text-sm text-muted-foreground">Плейлист приватний: його бачите лише ви.</p>
+      <section aria-label="Доступ за посиланням" className="panel flex flex-col gap-3 p-5">
+        <h2 className="text-xl font-semibold">Доступ за посиланням</h2>
+        <p className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Lock aria-hidden="true" className="size-4" />
+          Плейлист приватний: його бачите лише ви.
+        </p>
         <form action={enableSharingAction.bind(null, playlistId)}>
           <Button type="submit">Увімкнути доступ за посиланням</Button>
         </form>
@@ -39,32 +44,48 @@ export function SharePanel({ playlistId, shareToken }: { playlistId: string; sha
   const status = statusOf(url);
 
   return (
-    <section aria-label="Доступ за посиланням" className="flex flex-col gap-3 rounded-xl border p-4">
-      <h2 className="text-lg font-medium">Доступ за посиланням</h2>
-      <p className="text-sm text-muted-foreground">Усі, хто має посилання, можуть переглянути плейлист.</p>
+    <section
+      aria-label="Доступ за посиланням"
+      className="panel flex flex-col gap-4 border-primary/25 bg-[color-mix(in_oklch,var(--card),var(--accent)_45%)] p-5"
+    >
+      <h2 className="text-xl font-semibold">Доступ за посиланням</h2>
+      <p className="flex items-center gap-2 text-sm text-accent-foreground">
+        <Link2 aria-hidden="true" className="size-4" />
+        Усі, хто має посилання, можуть переглянути плейлист.
+      </p>
       <div className="flex flex-col gap-2">
         <Label htmlFor={inputId}>Посилання</Label>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Input id={inputId} value={url} readOnly onFocus={(event) => event.currentTarget.select()} />
-          <Button type="button" onClick={() => copy(url)}>
-            Скопіювати посилання
-          </Button>
+        <div className="flex items-center gap-1.5">
+          <Input
+            id={inputId}
+            value={url}
+            readOnly
+            className="font-mono text-sm md:text-[0.8125rem]"
+            onFocus={(event) => event.currentTarget.select()}
+          />
+          <IconButton label="Скопіювати посилання" variant="default" size="icon-lg" onClick={() => copy(url)}>
+            {status === "copied" ? <Check /> : <Copy />}
+          </IconButton>
+          <form action={regenerateShareTokenAction.bind(null, playlistId)}>
+            <IconButton label="Перегенерувати посилання" type="submit" variant="outline" size="icon-lg">
+              <RefreshCw />
+            </IconButton>
+          </form>
+          <form action={disableSharingAction.bind(null, playlistId)}>
+            <IconButton
+              label="Вимкнути доступ"
+              type="submit"
+              variant="outline"
+              size="icon-lg"
+              className="hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+            >
+              <Link2Off />
+            </IconButton>
+          </form>
         </div>
-        <p role="status" className="text-sm text-muted-foreground">
+        <p role="status" className={status === "failed" ? "text-sm text-destructive" : "sr-only"}>
           {status === "copied" ? "Посилання скопійовано." : status === "failed" ? "Не вдалося скопіювати посилання." : ""}
         </p>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        <form action={regenerateShareTokenAction.bind(null, playlistId)}>
-          <Button type="submit" variant="outline">
-            Перегенерувати посилання
-          </Button>
-        </form>
-        <form action={disableSharingAction.bind(null, playlistId)}>
-          <Button type="submit" variant="destructive">
-            Вимкнути доступ
-          </Button>
-        </form>
       </div>
     </section>
   );

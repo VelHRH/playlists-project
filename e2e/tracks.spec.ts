@@ -6,6 +6,7 @@ async function signUpWithPlaylist(page: Page) {
   await page.getByLabel("Email").fill(`user-${crypto.randomUUID()}@example.com`);
   await page.getByLabel("Пароль").fill("correct-horse-battery");
   await page.getByRole("button", { name: "Зареєструватися" }).click();
+  await page.getByRole("button", { name: "Новий плейлист" }).click();
   await page.getByLabel("Назва").fill("Літо");
   await page.getByRole("button", { name: "Створити плейлист" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Літо" })).toBeVisible();
@@ -13,6 +14,7 @@ async function signUpWithPlaylist(page: Page) {
 
 async function addTrack(page: Page, track: { artist: string; title: string; url?: string; note?: string }) {
   const form = page.getByRole("form", { name: "Новий трек" });
+  if (!(await form.isVisible())) await page.getByRole("button", { name: "Додати трек" }).click();
   await form.getByLabel("Виконавець").fill(track.artist);
   await form.getByLabel("Назва").fill(track.title);
   await form.getByLabel("Посилання (необов'язково)").fill(track.url ?? "");
@@ -32,6 +34,8 @@ test("owner adds, edits and removes tracks and sees the count in the list", asyn
 
   await addTrack(page, { artist: "ДахаБраха", title: "Vesna", url: "https://example.com/vesna", note: "Для ранку" });
   await expect(tracks.getByRole("listitem")).toHaveCount(1);
+  await expect(page.getByRole("form", { name: "Новий трек" })).toBeHidden();
+  await page.getByRole("button", { name: "Додати трек" }).click();
   await expect(page.getByRole("form", { name: "Новий трек" }).getByLabel("Виконавець")).toHaveValue("");
   await addTrack(page, { artist: "Океан Ельзи", title: "Обіми" });
   await expect(tracks.getByRole("listitem")).toHaveCount(2);
@@ -56,7 +60,7 @@ test("owner adds, edits and removes tracks and sees the count in the list", asyn
   await expect(tracks.getByRole("listitem")).toHaveCount(2);
   await expect(tracks).toContainText("Океан Ельзи — Обійми");
 
-  await page.getByRole("link", { name: "← Мої плейлисти" }).click();
+  await page.getByRole("link", { name: "Мої плейлисти", exact: true }).click();
   await expect(page.getByRole("list", { name: "Мої плейлисти" }).getByRole("listitem")).toContainText("2 треки");
 });
 
@@ -91,7 +95,7 @@ test("owner pastes a list, fixes the unrecognised line and saves the tracks in o
   ]);
 });
 
-test("owner reorders tracks with the arrows and by dragging, and the order survives a reload", async ({ page }) => {
+test("owner reorders tracks with the keyboard and by dragging, and the order survives a reload", async ({ page }) => {
   await signUpWithPlaylist(page);
   const tracks = page.getByRole("list", { name: "Треки" });
   for (const title of ["Перший", "Другий", "Третій"]) {
@@ -99,11 +103,13 @@ test("owner reorders tracks with the arrows and by dragging, and the order survi
     await expect(tracks.getByRole("listitem").last()).toContainText(title);
   }
 
-  await expect(page.getByRole("button", { name: "Перемістити трек 1 вгору" })).toBeDisabled();
-  await expect(page.getByRole("button", { name: "Перемістити трек 3 вниз" })).toBeDisabled();
-
-  await page.getByRole("button", { name: "Перемістити трек 1 вниз" }).click();
+  await page.getByRole("button", { name: "Перетягнути трек 1" }).focus();
+  await page.keyboard.press("Space");
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Space");
   await expect(tracks.getByRole("listitem")).toHaveText([/Другий/, /Перший/, /Третій/]);
+  await expect(tracks).toHaveAttribute("aria-busy", "false");
+  await expect(page.locator("[data-dnd-dragging]")).toHaveCount(0);
 
   const handle = page.getByRole("button", { name: "Перетягнути трек 3" });
   const target = tracks.getByRole("listitem").first();

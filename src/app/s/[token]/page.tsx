@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/auth/current-user";
 import { signInReturningTo } from "@/auth/return-path";
 import { TrackLine } from "@/app/playlists/track-line";
 import { buttonVariants } from "@/components/ui/button";
+import { Wordmark } from "@/components/wordmark";
 import { formatTrackCount } from "@/lib/track-count";
 import { getSharedPlaylist, PlaylistError } from "@/playlists/playlists";
 import { CopyAsText } from "@/app/playlists/copy-as-text";
@@ -32,7 +33,8 @@ async function SharedPlaylist({ params }: Pick<PageProps<"/s/[token]">, "params"
   ]);
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 px-4 py-8 sm:px-6">
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-4 py-8 sm:px-6">
+      <Wordmark />
       {user?.id === playlist.ownerId ? (
         <Link
           href={`/playlists/${playlist.id}`}
@@ -50,22 +52,26 @@ async function SharedPlaylist({ params }: Pick<PageProps<"/s/[token]">, "params"
           Зберегти копію
         </Link>
       )}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-3xl font-semibold tracking-tight break-words">{playlist.title}</h1>
-        <p className="text-sm text-muted-foreground">Автор: {playlist.authorName}</p>
+      <div className="flex flex-col gap-2">
+        <h1 className="text-4xl font-semibold break-words sm:text-5xl">{playlist.title}</h1>
+        <p className="text-sm text-muted-foreground">Автор: <span className="font-medium text-foreground">{playlist.authorName}</span></p>
       </div>
       {playlist.description && (
-        <p className="whitespace-pre-line break-words text-muted-foreground">{playlist.description}</p>
+        <p className="max-w-[65ch] whitespace-pre-line break-words text-lg leading-8 text-muted-foreground">{playlist.description}</p>
       )}
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-medium">Треки · {formatTrackCount(playlist.tracks.length)}</h2>
+          <h2 className="text-xl font-semibold">
+            Треки <span className="font-sans text-base font-normal text-muted-foreground">· {formatTrackCount(playlist.tracks.length)}</span>
+          </h2>
           {playlist.tracks.length > 0 && <CopyAsText tracks={playlist.tracks} />}
         </div>
         {playlist.tracks.length === 0 ? (
-          <p className="text-muted-foreground">У цьому плейлисті поки немає треків.</p>
+          <p className="rounded-xl border border-dashed border-input/60 px-5 py-8 text-center text-muted-foreground">
+            У цьому плейлисті поки немає треків.
+          </p>
         ) : (
-          <ol aria-label="Треки" className="flex flex-col divide-y rounded-xl border">
+          <ol aria-label="Треки" className="panel flex flex-col divide-y overflow-hidden">
             {playlist.tracks.map((track, index) => (
               <li key={track.id} className="px-4 py-3">
                 <TrackLine track={track} number={index + 1} />

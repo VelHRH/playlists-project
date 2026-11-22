@@ -1,6 +1,7 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { Check, Copy } from "lucide-react";
+import { IconButton } from "@/components/ui/icon-button";
 import { formatTrackList, type ParsedTrack } from "@/playlists/track-list";
 import { useClipboardCopy } from "./use-clipboard-copy";
 
@@ -12,13 +13,16 @@ export function CopyAsText({ tracks }: { tracks: ParsedTrack[] }) {
   const status = statusOf(text);
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <Button type="button" variant="outline" size="sm" onClick={() => copy(text)}>
-        Скопіювати як текст
-      </Button>
-      <p role="status" className="text-sm text-muted-foreground">
+    <div className="flex items-center gap-2">
+      <p
+        role="status"
+        className={status === "failed" ? "text-sm text-destructive" : "sr-only"}
+      >
         {status ? messages[status] : ""}
       </p>
+      <IconButton label="Скопіювати як текст" size="icon" onClick={() => copy(text)}>
+        {status === "copied" ? <Check className="text-primary" /> : <Copy />}
+      </IconButton>
     </div>
   );
 }

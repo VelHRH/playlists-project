@@ -19,6 +19,7 @@ test("user creates a playlist, finds it in the list, and nobody else can open it
   await signUp(page, "Олена");
   await expect(page.getByText("У вас ще немає плейлистів")).toBeVisible();
 
+  await page.getByRole("button", { name: "Новий плейлист" }).click();
   await page.getByLabel("Назва").fill("Літо");
   await page.getByLabel("Опис (необов'язково)").fill("Для дороги");
   await page.getByRole("button", { name: "Створити плейлист" }).click();
@@ -27,7 +28,7 @@ test("user creates a playlist, finds it in the list, and nobody else can open it
   await expect(page.getByText("Для дороги")).toBeVisible();
   const playlistUrl = page.url();
 
-  await page.getByRole("link", { name: "← Мої плейлисти" }).click();
+  await page.getByRole("link", { name: "Мої плейлисти", exact: true }).click();
   await page.getByRole("list", { name: "Мої плейлисти" }).getByRole("link", { name: "Літо" }).click();
   await expect(page).toHaveURL(playlistUrl);
 
@@ -44,6 +45,7 @@ test("user creates a playlist, finds it in the list, and nobody else can open it
 
 test("owner renames a playlist, then deletes it after confirming", async ({ page }) => {
   await signUp(page, "Олена");
+  await page.getByRole("button", { name: "Новий плейлист" }).click();
   await page.getByLabel("Назва").fill("Літо");
   await page.getByLabel("Опис (необов'язково)").fill("Для дороги");
   await page.getByRole("button", { name: "Створити плейлист" }).click();
@@ -59,6 +61,7 @@ test("owner renames a playlist, then deletes it after confirming", async ({ page
   await form.getByLabel("Назва").fill("Осінь");
   await form.getByLabel("Опис (необов'язково)").fill("Для дощу");
   await form.getByRole("button", { name: "Зберегти" }).click();
+  await expect(form).toBeHidden();
   await expect(page.getByRole("heading", { level: 1, name: "Осінь" })).toBeVisible();
   await expect(page.getByText("Для дощу")).toBeVisible();
   await page.reload();

@@ -45,14 +45,12 @@ export function OrderedTracks({ playlistId, tracks }: { playlistId: string; trac
           if (isSortable(source)) move(source.initialIndex, source.index);
         }}
       >
-        <ol aria-label="Треки" aria-busy={saving} className="flex flex-col divide-y rounded-xl border">
+        <ol aria-label="Треки" aria-busy={saving} className="panel flex flex-col divide-y transition-opacity duration-(--duration-base) aria-busy:opacity-80">
           {ordered.map((track, index) => (
             <TrackItem
               key={track.id}
               track={track}
               index={index}
-              total={ordered.length}
-              onMove={(to) => move(index, to)}
             />
           ))}
         </ol>

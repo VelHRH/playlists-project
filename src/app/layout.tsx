@@ -1,10 +1,20 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Golos_Text, JetBrains_Mono, Literata } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
-const inter = Inter({
-  variable: "--font-sans",
+const golos = Golos_Text({
+  variable: "--font-golos",
+  subsets: ["latin", "cyrillic"],
+});
+
+const literata = Literata({
+  variable: "--font-literata",
+  subsets: ["latin", "cyrillic"],
+});
+
+const jetbrains = JetBrains_Mono({
+  variable: "--font-jetbrains",
   subsets: ["latin", "cyrillic"],
 });
 
@@ -15,7 +25,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="uk" className={cn("h-full antialiased font-sans", inter.variable)}>
+    <html
+      lang="uk"
+      className={cn("h-full antialiased font-sans", golos.variable, literata.variable, jetbrains.variable)}
+    >
       <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );
